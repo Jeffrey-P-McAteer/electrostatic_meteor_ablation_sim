@@ -1,0 +1,71 @@
+
+\chapter{Analysis}
+
+Here we discuss the tools provided for analyzing the output of eppic
+in the context of a few examples.  
+
+\section{IDL}\index{IDL}
+
+EPPIC analysis has traditionally relied on IDL for it's analysis, so
+many IDL routines have been written to read in and process the output
+of EPPIC. These are located in the 'idl' directory, under several
+subdirectories. Make sure to add the absolute path of this diectory to
+your IDL \textbf{!path} variable using the \textbf{expand\_path}
+routine. 
+
+There are some common routines for reading in arrays written by EPPIC
+or for plotting and moving-making of data. Then there are several
+runtime scripts that call these routines, doing anything from small
+tasks, such as reading in all the density arrays (\textbf{denep.pro}),
+to much larger and multiple-stepped tasks. The first section covers a
+very brief overview of using IDL. This is followed by a series of
+sections listing the most common routines, with examples of the
+output. 
+
+\subsection{Using IDL}
+The best source for help is the program \textbf{idlhelp}, which is
+really just a link to a set of HTML help pages. Typically you will run
+idl in a runs root directory, which is the directory that holds all
+the domain**** directories. First, you might want to calculate the
+cyclotron frequency:
+\begin{lstlisting}[language=ITTIDL,numbers=left,stepnumber=2]
+  IDL> ; Comments start with ';'
+  IDL> @eppic.i
+  IDL> help,Bz
+  IDL> help,qd0,md0
+  IDL> print,'Omega_e = ',Bz*qd0/md0,', Hz'
+\end{lstlisting}
+Line 2 loads the input file, which has a syntax acceptable to
+IDL. This will load a series of variables, whose value and existance
+can be checked with the \textbf{help} routine (lines 2 and 3). 
+
+... more to come on this front... not necissary now
+
+\subsection{Saving Data, Images, and Movies}\label{ss:savingdata}
+
+\subsection{The 'ep' Scripts}
+
+\subsection{plot}
+
+\subsection{image\_plot}
+
+\subsection{image\_movie}
+
+\section{VTK and Paraview}
+
+For the 3D runs, VTK and Paraview provide an alternative method for
+plotting the data in several different forms. VTK (visualization tool
+kit) is a library for plotting data, and Paraview is a program that
+provides a simple(ish) graphical interface to the VTK tools. To get
+the data in VTK format, we use IDL (\emph{see Section
+  \ref{ss:savingdata}}). Once in VTK format, the file (or files, if
+there is time-dependant data) may be read into Paraview... more to
+come on this subject.
+
+\subsection{Basics of Paraview}
+
+
+
+
+
+

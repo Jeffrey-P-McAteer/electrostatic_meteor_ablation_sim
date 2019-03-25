@@ -1,0 +1,117 @@
+
+
+\chapter{Development Road Map}
+% some key counters
+\newcounter{eppic_version}
+\newcounter{eppic_revision}
+\newcounter{eppic_minor_revision}
+
+% set the current version of the code
+\setcounter{eppic_version}{1}
+\setcounter{eppic_revision}{0}
+\setcounter{eppic_minor_revision}{0}
+
+\section{Future Milestones}
+
+\newenvironment{versionList}[1][\value{eppic_version}]{
+  \begin{list}
+    {eppic-\arabic{eppic_version}.\arabic{eppic_revision}}
+    {\usecounter{eppic_revision}}
+    \setcounter{eppic_version}{#1}
+    \addtocounter{eppic_revision}{-1}
+  }
+  {\addtocounter{eppic_version}{1}\end{list}}
+\newenvironment{minor_versionList}{
+  \begin{list}
+    {eppic-\arabic{eppic_version}.\arabic{eppic_revision}.\arabic{eppic_minor_revision}}
+    {\usecounter{eppic_minor_revision}}
+    \addtocounter{eppic_minor_revision}{-1}
+  }
+  {\end{list}}
+
+
+\subsection{Clean-up and Prep}
+In this version we are basically cleaning up any glitches with using
+the autotools approach. Along with fixing some bugs, the framework for
+this style of cooperative development is laid. This includes the
+current documentation using LaTeX, the make target 'check' and the
+affiliated test programs, a series of example inputs that would be
+useful for showing how EPPIC can be used, and finally all the IDL
+routines needed to process EPPIC's output. 
+
+\begin{versionList}
+% Version 1: Clean-up and Prep
+\item Documentation
+\item Testing
+\item Examples
+\item IDL and I/O
+  \begin{minor_versionList}
+  \item Add common routines to idl directory
+  \item Add ppic3d routines to idl directory
+  \item Add eppic routines to idl directory
+  \end{minor_versionList}
+\end{versionList}
+
+
+\subsection{AF Research I}
+This represents the first version of major development. It follows the
+guidelines laid out in the 2008 Air Force proposal for Spread-F
+research. 
+\begin{versionList}
+% Version 2: AF Research I
+\item Particle Injection
+  \begin{minor_versionList}
+    \item Add test programs for the current inject facilities.
+    \item Add examples for the current inject facilities. 
+    \item Add global injection capabilities (including tests,etc.)      
+  \end{minor_versionList}
+\item Non-periodic A-la Marcos Research
+  \begin{minor_versionList}
+    \item Domain decompose current non-periodic code
+    \item Extend to 3D with 2D spectral solve for y and z
+    \end{minor_versionList}
+\end{versionList}
+
+
+\subsection{AF Research II}
+This is a continuation of the previous version, but it is given it's
+own version number here as is done in the proposal.
+\begin{versionList}
+% Version 3: AF Research II
+\item Thermal Fluid Simulations  
+\item Coulomb Collisions
+\item 3D Quasi-neutral + Fluid Simulations
+\end{versionList}
+
+
+\section{Past Milestones}
+
+
+
+\section{Possible Additions, Improvements and Modifications}
+
+\subsection{Global Changes}
+\begin{itemize}
+\item Have a 'distribution' structure, which includes method-independent parameters, such as qd,md,nd0 etc.
+\item Make a 'vecfield' class
+\item Add Doxygen for documenting code.
+\end{itemize}
+
+\subsection{Fluid Methods}
+\begin{itemize}
+\item Add initialization method that runs fluid simulation until 'equilibrated'
+\end{itemize}
+\subsection{PIC Methods}
+% \begin{itemize}
+% \item
+% \end{itemize}
+
+\section{Known Bugs}
+
+\subsection{General}
+
+\subsection{Fluid Methods}
+
+\subsection{PIC Methods}
+
+\subsection{Field Solver}

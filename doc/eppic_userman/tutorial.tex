@@ -1,0 +1,36 @@
+
+
+\chapter{An EPPIC Tutorial}
+
+\section{High frequency Electron plasma waves}
+%% Example 1 -- true mass e-, just e-, what modes
+
+As a simple introduction, example (1) studies a single distriubtion plasma. 
+This is possible because the peroidic field solver is only valid for net
+neutral systems, and a time-independant, uniform ion distribution is 
+numerically included in the simulation of electrons. The electrons are treated
+with their true mass, which is often much smaller in other simulations. This
+small mass results in very vast plasma frequencies, which then requires very
+fine time resolution. As we'll see in later simulaitons, we are often 
+interested longer time scales, and in those cases we'll experiment with 
+an artificially large electron mass. 
+
+The goal of example one is to introduce the basics of running eppic and 
+post-processing the output. This run will require at least 8 processors, but
+it is setup for 64 processors. If you are running on a machine with
+fewer processors, then increase the particle number in the input
+accordingly. So if you only have 8 processors, increase the
+\textbf{npd0} variable from \textbf{820000} to \textbf{6560000}. You
+may run into memory issues by using fewer processors and more
+particles per processor, so keep this in mind if you run into errors. 
+
+What does the output look like?
+
+
+%% Example 2 -- true mass e-, just e-, heating experiment
+
+
+%% Example 3 -- modified mass e-, ions + e-, ion modes
+
+
+%% Example 4 -- FBI simulation

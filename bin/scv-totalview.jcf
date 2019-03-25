@@ -1,0 +1,48 @@
+#
+# Sample LoadLeveler Job Command File
+# to run a BGL job under control of Totalview debugger
+#
+# (02/06/08)
+#
+### required, do not change
+# @ job_type = parallel
+#
+### required, do not change
+# Note: we use xterm because the totalview gui needs to run from a
+# terminal in order to function properly.
+# @ executable = /usr/bin/xterm
+#
+### required, the arguments to xterm, totalview, and mpirun
+# Fill in <your_display> appropriately and make sure that
+# your Xserver accepts remote connections from lee.bu.edu and levi.bu.edu
+#
+# All of the arguments you would normally pass to "mpirun" should
+# follow the "-a."
+# @ arguments = -display echo.bu.edu -e totalview mpirun -a -np 64 -mode VN -cwd /project/eregion/meerso/eppic_dev/src -exe /project/eregion/meerso/eppic_dev/src/eppic
+#
+#
+### required, you must specify a runtime limit for your job
+### format: hours:minutes:seconds or minutes:seconds or seconds
+# @ wall_clock_limit = 60:00
+#
+### a directory for mpirun io files (defaults to cwd at time of submission)
+# @ initialdir = /project/eregion/meerso/eppic_dev/src
+#
+### the next 3 are pathnames for totalvies 's stdin, stdout, and stderr
+### they can be fullpaths or relative to initialdir
+### $(jobid) will be assigned by ll
+# @ input = /dev/null
+# @ output = ../data/tv$(jobid).out
+# @ error = ../data/tv$(jobid).err
+#
+### the project that the job's time should be charged to 
+### blank means to use your default project
+### specify one of your other projects to override the default
+### the command "groups" lists all of your projects
+# @ group =
+#
+### use "start" instead of "never" to get email when the job starts
+# @ notification = never
+#
+### required, do not change
+# @ queue

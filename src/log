@@ -1,0 +1,168 @@
+
+MPI STARTING 8 PROCESSORS
+ MPI Error Handler: 0
+
+EPPIC Starting at: Thursday 01/18/07 09:25:44
+
+Echoing EPPIC input file:
+
+	; PPIC3D parameter file (also readable by IDL)
+	title = 'FBI 2D 1024x1024 psi=.3 Me=44me dx=0.04 Ey=70mV/m'
+
+	; Mesh size and Grid size
+	ndim_space = 2
+	nsubdomains = 8
+	nx = 128
+	dx = 0.04
+	ny = 1024
+	dy = 0.04
+	;      nz = 64
+	;      dz = 4.0
+	; Time step, number of time steps to run, and time-steps between output:
+	dt = 3e-06
+	nt = 77440
+	nout = 128
+	nout_avg = 2
+	; Fraction of particles to output
+	npout = 512
+	; Define the dielectric of free space (default epsilon=8.8542e-12)
+	eps = 8.8542e-12
+	; Bz in MKS (Tesla)
+	Bz = 5e-05
+	; Damping width: (try fwidth=3)
+	;       fwidth = 3
+	; Damping steepness: (try fsteep=3)
+	;       fsteep = 3
+	; Time steps beteen dumps
+	iwrite = 11008
+	; Start from t=0 (iread=0) or dump (iread=1)
+	iread = 0
+	; Number of distributions to initialize
+	ndist = 2
+	; Limit the frequency of outputing divj:
+	divj_out_subcycle = 8
+	; Neutral parameters:
+	vth_neutral = 287
+	m_neutral = 5e-26
+	; External  Electric field in y-direction
+	Ey0_external = 0.07
+	; Kill non-oblique modes in 3D
+	;       kill_modes_ang=75
+	
+	; First distribution: electrons
+	dist = 0
+	; number of particles, density, mass, charge, thermal velocity and drift speed
+	npd = 500000
+	n0d = 1e+09
+	; Make electrons too massive
+	md = 4e-29
+	qd = -1.602e-19
+	; Increase the coll_rate
+	coll_rate = 4375
+	; Make the mass of the neutrals 100 x lighter(for e-)
+	massd_neutral = 1e-27
+	vthd_neutral = 2035
+	; Thermal velocities
+	vxthd = 10170
+	vythd = 10170
+	vzthd = 10170
+	vx0d = 0
+	vy0d = 0
+	;      vz0d0 = 0
+	pnvx = 64
+	pnvy = 64
+	;      pnvz0 = 64
+	pvxmin = -60000
+	pvxmax = 60000
+	pvymin = -60000
+	pvymax = 60000
+	pvzmin = -60000
+	pvzmax = 60000
+	init_dist = 1
+	;      den_out_subcycle0 = 2
+	vdist_out_subcycle = 2
+	part_out_subcycle = 4
+	
+	;Second distribution - ions
+	dist = 1
+	;       species_Bz1 = 0
+	npd = 500000
+	n0d = 1e+09
+	md = 5e-26
+	qd = 1.602e-19
+	coll_rate = 3000
+	vx0d = 0
+	vy0d = 0
+	;        vz0d1 = 0
+	vxthd = 287
+	vythd = 287
+	vzthd = 287
+	pnvx = 64
+	pnvy = 64
+	;        pnvz1 = 64
+	pvxmin = -2000
+	pvxmax = 2000
+	pvymin = -2000
+	pvymax = 2000
+	pvzmin = -2000
+	pvzmax = 2000
+	init_dist = 1
+	subcycle = 8
+	;        den_out_subcycle1 = 2
+	vdist_out_subcycle = 2
+	part_out_subcycle = 4
+	
+	; Number and resolution of distributions to output
+	fndist = 1
+	; Distribution 0 shows phase space for the electrons
+	fdistn = 0
+	fvxmin = -60000
+	fvxmax = 60000
+	fnvx = 32
+	fvymin = -60000
+	fvymax = 60000
+	fnvy = 16
+	fxmin = 0
+	fxmax = 12.8
+	fnx = 16
+	fymin = 0
+	fymax = 12.8
+	fny = 4
+	fof = 0
+	fnout = 4
+
+
+Checking a few parameters:
+Distribution 0:
+	X Temperature: 299.651 (K)
+	Y Temperature: 299.651 (K)
+	Z Temperature: 299.651 (K)
+	X Debye Length: 0.0377801 (m)
+WARNING: dx (0.04) > debye length ... Possible numerical instability
+	Y Debye Length: 0.0377801 (m)
+WARNING: dy (0.04) > debye length ... Possible numerical instability
+	Z Debye Length: 0.0377801 (m)
+WARNING: dz (1) > debye length ... Possible numerical instability
+	Plasma frequency: 269189 (rad/s) 42842.8 (Hz)
+	Time steps per plasma oscillation: 7.78038
+	Particles represented by single PIC particle: 1.90735e-05
+
+Distribution 1:
+	X Temperature: 298.296 (K)
+	Y Temperature: 298.296 (K)
+	Z Temperature: 298.296 (K)
+	X Debye Length: 0.0376946 (m)
+WARNING: dx (0.04) > debye length ... Possible numerical instability
+	Y Debye Length: 0.0376946 (m)
+WARNING: dy (0.04) > debye length ... Possible numerical instability
+	Z Debye Length: 0.0376946 (m)
+WARNING: dz (1) > debye length ... Possible numerical instability
+	Plasma frequency: 7613.82 (rad/s) 1211.78 (Hz)
+	Time steps per plasma oscillation: 275.078
+	Particles represented by single PIC particle: 1.90735e-05
+
+
+Time step      0: p=5.7038e-22 1.2593e-13 1.2971e-11
+74.1233
+74.1237
+ERROR: 0031-161  EOF on socket connection with node loopback

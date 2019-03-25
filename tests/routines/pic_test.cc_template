@@ -1,0 +1,236 @@
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  This is a template for testing the PIC routines.
+  Write a little message here about what this is testing.
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include "ArrayNd.h"
+#include "eppic.h"
+#include "eppic-mpi.h"
+
+/* 
+   All the initialization of the variables are placed in the following header.
+   This needs to replaced by removing the need for global variables.
+ */
+#include "global_defs.h"
+
+
+
+#ifndef HAVE_SOME_SPECIAL_LIB
+/* make a dummy test program */
+
+
+int main(int argc, char* argv[])
+{
+  if (mpi_rank==0) {
+    cout << "\tThis version of EPPIC was not configured with SOME_SPECIAL_LIB\n"
+	 << "\tTherefore, efield_quasineut is not available, and\n"
+	 << "\twont be tested. Please recompile with access to\n"
+	 << "\tSOME_SPECIAL_LIB.\n"
+      ;
+  }
+  /* this guarentees this passes, so this doesn't mess-up 'make check' */
+  return 0;
+}
+#else 
+
+int main(int argc, char* argv[])
+{
+
+  /* initialize functions called */
+  void domain_decomp();
+
+  /* 
+     Initialize variables as if you were calling infile.cc.
+     An ungodly number of variables need to be initialized.
+     Variables likely needed in testing a PIC distribution are set with 
+     reasonable values.
+  */
+  /* ndim_space=ndim; */
+  nx=64;
+  ny=64;
+  /* nz=64; */
+  dt=1;
+  dx=0.125;
+  dy=dx;
+  dz=dx;
+  /* nt=1; */
+  /* Ermag=??; */
+  Ey0_external = -0.02;
+  /* nEext=??; */
+  eps=EPS0;
+  Bx=0;
+  Bz=2.5e-5;
+  /* damp_nu=??; */
+  /* damp_nx=??; */
+  /* w0=??; */
+  /* fwidth=??; */
+  /* fsteep=??; */
+  v0x_neutral = 0;
+  v0y_neutral = 0;
+  v0z_neutral = 0;
+  vth_neutral = 249.85950;
+  m_neutral = 4.6e-26;
+  /* local=??; */
+  /* no_parallel_efields=??; */
+  /* kill_modes_ang=??; */
+  /* iontype=??; */
+  nsubdomains=1;
+  /* efield_algorithm=0; */
+  /* efield_petsc_algorithm=1; */
+  /* nout_avg=1; */
+  /* nout=1; */
+  /* npout=1; */
+  /* iwrite=0; */
+  /* iread=0; */
+  /* divj_out_subcycle=1; */
+  /* charge_out_subcycle=1; */
+  ndist=1;
+  dist=0;
+  npd=intAVec(ndist) = 921600;
+  n0peak=FTYPEAVec(ndist) = 1e11;
+  vxthd=FTYPEAVec(ndist) = 249.85950;
+  vythd=FTYPEAVec(ndist) = 249.85950;
+  /* vzthd=FTYPEAVec(ndist) = 249.85950; */
+  vx0d=FTYPEAVec(ndist) = 0.;
+  vy0d=FTYPEAVec(ndist) = 0.;
+  /* vz0d=FTYPEAVec(ndist) = 0.; */
+  /* n0b=FTYPEAVec(ndist) = 0.; */
+  /* vxthb=FTYPEAVec(ndist) = 0.; */
+  /* vythb=FTYPEAVec(ndist) = 0.; */
+  /* vzthb=FTYPEAVec(ndist) = 0.; */
+  /* vx0b=FTYPEAVec(ndist) = 0.; */
+  /* vy0b=FTYPEAVec(ndist) = 0.; */
+  /* vz0b=FTYPEAVec(ndist) = 0.; */
+   qd=FTYPEAVec(ndist) = QI;
+   md=FTYPEAVec(ndist) = 4.6e-26;
+   species_Bx=FTYPEAVec(ndist) = Bx;
+   species_Bz=FTYPEAVec(ndist) = Bz;
+   /* chargeon=intAVec(ndist) = 0; */
+   init_dist=intAVec(ndist) = 0;
+   coll_rate=FTYPEAVec(ndist) = 2.8e3;
+   part_pad=FTYPEAVec(ndist) = 1.2;
+   /* vrelmax=FTYPEAVec(ndist) = 0.; */
+   /* massd_neutral=FTYPEAVec(ndist) = -1; */
+   vx0d_neutral=FTYPEAVec(ndist) = v0_neutral[0]; 
+   vy0d_neutral=FTYPEAVec(ndist) = v0_neutral[1];
+   /* vz0d_neutral=FTYPEAVec(ndist) = v0_neutral[2]; */
+   /* vxthd_neutral=FTYPEAVec(ndist) = -1; */
+   /* vythd_neutral=FTYPEAVec(ndist) = -1; */
+   /* vzthd_neutral=FTYPEAVec(ndist) = -1; */
+   method=intAVec(ndist) = 0;
+   pnvx=intAVec(ndist) = 1;
+   pnvy=intAVec(ndist) = 1;
+   pnvz=intAVec(ndist) = 1;
+   pvxmin=FTYPEAVec(ndist) = 0.;
+   pvymin=FTYPEAVec(ndist) = 0.;
+   pvzmin=FTYPEAVec(ndist) = 0.;
+   pvxmax=FTYPEAVec(ndist) = 0.;
+   pvymax=FTYPEAVec(ndist) = 0.;
+   pvzmax=FTYPEAVec(ndist) = 0.;
+   pdamp_nu=FTYPEAVec(ndist) = -1.0;
+   param1=FTYPEAVec(ndist) = 0.;
+   param2=FTYPEAVec(ndist) = 0.;
+   param3=FTYPEAVec(ndist) = 0.;
+   param4=FTYPEAVec(ndist) = 0.;
+   param5=FTYPEAVec(ndist) = 0.;
+   param6=FTYPEAVec(ndist) = 0.;
+   param7=FTYPEAVec(ndist) = 0.;
+   param8=FTYPEAVec(ndist) = 0.;
+   param9=FTYPEAVec(ndist) = 1.;
+   param10=FTYPEAVec(ndist) = 0.;
+   /* thermal_gamma=FTYPEAVec(ndist) = 1.; */
+   /* diffc=FTYPEAVec(ndist) = 0; */
+   subcycle=intAVec(ndist) = 1;
+   /* supercycle=intAVec(ndist) = 1; */
+   /* species_dim=intAVec(ndist) = ndim; */
+   vel_dim=intAVec(ndist) = ndim;
+   den_out_subcycle=intAVec(ndist) = 1;
+   part_out_subcycle=intAVec(ndist) = 1;
+   vdist_out_subcycle=intAVec(ndist) = 1;
+   flux_out_subcycle=intAVec(ndist) = 1;
+   nvsqr_out_subcycle=intAVec(ndist) = 1;
+   phistore_out_subcycle=intAVec(ndist) = -1;
+   
+   
+   particle_misc *misc;
+   particle_dist *pic;
+   fluid *fspecie;
+   int failed=0;
+   
+   /* setup MPI */
+   int mpi_err;
+   MPI_Errhandler mpi_err_hand;
+   void mpi_error(int mpi_rank, int mpi_err, char *mpi_msg);
+   PetscErrorCode petsc_err_hand;
+
+   /* setup Petsc */
+
+#ifdef HAVE_PETSC
+  PetscInitialize(&argc,&argv,(char *)0,help);
+#else
+  MPI_Init(&argc,&argv);
+#endif
+  mpi_err=MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
+  if ( mpi_err != MPI_SUCCESS) 
+    mpi_error(mpi_rank, mpi_err,"rank call in main");
+  mpi_err=MPI_Comm_size(MPI_COMM_WORLD, &mpi_np);
+  if ( mpi_err != MPI_SUCCESS) 
+    mpi_error(mpi_rank, mpi_err,"size call in main");
+  if (mpi_rank == 0) {
+    mpi_err=MPI_Errhandler_get(MPI_COMM_WORLD,&mpi_err_hand);
+  }
+
+#ifdef DEBUG
+  /*
+    // The following code is intended for running gdb with parallel jobs
+  if (mpi_np>1) {
+    cout << " About to wait for debugging to start...\n";
+    int Debugwait=1;
+    if (mpi_rank==0) while(Debugwait);
+    cout << " About to reach wait statement on proc " << mpi_rank << "\n";
+    MPI_Barrier(MPI_COMM_WORLD);
+    cout << "Done waiting on proc " << mpi_rank << "\n";
+      }
+  */
+#endif
+
+  nsubdomains = mpi_np;
+  nx /=nsubdomains;
+  npd /=nsubdomains;
+
+  domain_decomp();
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Initialize ion pic 
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  void init_particles(particle_dist *&pic, particle_misc *&misc);
+  init_particles(pic, misc);
+
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Loop over nt calls and test
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+  for (int it=0;it<nt;it++) {
+    failed=0;
+    /* Test routine here */
+
+
+    if (failed) {
+#ifdef HAVE_PETSC
+      PetscFinalize();
+#endif
+      return 1;
+    }
+  }
+
+#ifdef HAVE_PETSC
+  PetscFinalize();
+#endif
+  return 0;
+}
+
+
+#endif 

@@ -1,0 +1,12 @@
+ID: 0001
+STATUS: OPEN
+FILES: eppic.i_parallel eppic.i_serial
+NOTES:
+9/22/09 -- Yann
+	At time step 81, there is one ion particle that is displaced
+	differently in the domain decomposed (parallel) vs the single
+	domain run (serial). The particle rests at x=64, which means
+	it is passed to x=0, but this is not done in the parallel
+	run. This is likely a precision issue, though it needs to be
+	carefully tracked down. The parallel run is done using 4
+	processors, while the serial run is down using 1. 

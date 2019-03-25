@@ -1,0 +1,50 @@
+EPPIC -- Getting Started
+************************
+EPPIC -- The Electrostatic Parallel Particle-in-Cell Simulator
+
+Execution and Output
+====================
+
+To run the program, for example with 4 processors, type:
+
+mpirun -n 4 eppic eppic.i
+
+The input file, 'eppic.i' in this example, can have any name, but it will be
+copied to the output directory as 'eppic.i'. This is because the IDL routines
+read in the input parameters by assuming there is a file called eppic.i.
+
+If the output variable is not set in the input file, the files are stored in
+the current working directory. Some files are stored at this level, while most
+are stored in each domain*** folder. Some global files, such as moments0.out,
+are stored in domain000. Typically files with 'bin' suffix are binary files 
+and are read using IDL routines. For more information, see the 
+eppic_userman.pdf file in the doc directory. 
+
+Basic Installation
+==================
+
+See INSTALL for notes on how to compile the code. Once compiled, you can 
+install it to a particular directory using "make install", but make sure to
+set the "--prefix=/your/target/dir" flag when you run configure. 
+
+Assumptions
+===========
+
+This program is designed for a parallel machine, where MPI libraries are 
+enabled.
+
+Requirements
+============
+
+MPI, FFTW 2.1.5
+
+Known Issues
+============
+
+The non-periodic solver is not working under all conditions.
+
+AUTHORS
+=======
+
+The primary developer is Meers Oppenheim; see AUTHORS for a full list of 
+contributors.

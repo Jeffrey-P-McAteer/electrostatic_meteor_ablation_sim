@@ -1,0 +1,115 @@
+% This is just the shell of a user manual. As things are added,
+% I will uncomment them.
+
+\documentclass{report}
+\usepackage{fullpage}
+
+\usepackage{hyperref}
+
+\hypersetup{
+  pdfauthor={Meers Oppenheim},
+  pdftitle={EPPIC User Manual},
+  pdfborder=0,
+  letterpaper=1
+}
+
+
+
+% The following package is useful for documenting source code.
+%\usepackage{color}
+\usepackage{xcolor}
+\definecolor{KwdRed}{rgb}{.7,0,0}
+\definecolor{LightGray}{rgb}{.9,.9,.9}
+\definecolor{DarkGray}{rgb}{.4,.4,.4}
+\usepackage{listings}
+\lstset{
+  basicstyle=\small,
+  keywordstyle=\color{KwdRed}\bfseries,
+  commentstyle=\color{DarkGray},
+  backgroundcolor=\color{LightGray},
+}
+
+%%
+%% Test IDL
+%%
+\lstdefinelanguage[TEST]{IDL}%
+  {morekeywords={any,attribute,boolean,case,char,const,context,default,%
+      double,enum,exception,fixed,float,in,inout,interface,long,module,%
+      native,Object,octet,oneway,out,raises,readonly,sequence,short,%
+      string,struct,switch,typedef,union,unsigned,void,wchar,wstring,%
+      FALSE,TRUE},%
+   sensitive,%
+   moredirectives={define,elif,else,endif,error,if,ifdef,ifndef,line,%
+      include,pragma,undef,warning},%
+   moredelim=*[directive]\#,%
+   morecomment=[l]//,%
+   morecomment=[s]{/*}{*/},%
+   morestring=[b]"%
+  }[keywords,comments,strings,directives]%
+
+\lstdefinelanguage{ITTIDL}%
+  {morekeywords={print,help},%
+%   sensitive,%
+%   moredirectives={for},%
+%   moredelim=*[directive]\#,%
+   morecomment=[l]{;},%
+%   morecomment=[s]{/*}{*/},%
+   morestring=[b]'%
+  }[keywords,comments,strings,directives]%
+
+\lstloadlanguages{bash,C++}
+
+\usepackage{index}
+\makeindex
+
+
+
+\title{EPPIC\\The Electrostatic Parallel Particle-in-Cell Simulator}
+\include{authors}
+
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+% -------------------------------------
+% CHAPTER 1: INTRODUCTION
+% -------------------------------------
+\include{eppic_userman/intro}
+
+% -------------------------------------
+% CHAPTER 2: SYSTEM
+% -------------------------------------
+%\include{eppic_userman/system}
+
+% -------------------------------------
+% CHAPTER 3: PIC DISTRIBUTIONS
+% -------------------------------------
+%\include{eppic_userman/pic}
+
+% -------------------------------------
+% CHAPTER 4: FLUID DISTRIBUTIONS
+% -------------------------------------
+\include{eppic_userman/fluid}
+
+% -------------------------------------
+% CHAPTER 5: ANALYSIS
+% -------------------------------------
+\include{eppic_userman/analysis}
+
+A test citation\cite{Oppenheim1996}.
+%==========================================================================%
+% Bibliography
+\bibliographystyle{apalike}
+
+
+% each subdirectory can have its own BiBTeX file
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{eppic}
+
+% index
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+
+\end{document}
+

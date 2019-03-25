@@ -1,0 +1,722 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+lang="en" xml:lang="en">
+<head>
+<title>EPPIC Developer's Manual</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2008-10-14 12:34:37 EDT"/>
+<meta name="author" content="Meers Oppenheim and Yann Tambouret"/>
+<style type="text/css">
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color:lightblue; font-weight:normal }
+  .target { }
+  .timestamp { color: grey }
+  .timestamp-kwd { color: CadetBlue }
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top; }
+  dt { font-weight: bold; }
+
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+
+</style>
+</head><body>
+<h1 class="title">EPPIC Developer's Manual</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Introduction</a></li>
+<li><a href="#sec-2">2 Version control and Repository</a>
+<ul>
+<li><a href="#sec-2.1">2.1 Intro</a></li>
+<li><a href="#sec-2.2">2.2 Major Commands</a></li>
+<li><a href="#sec-2.3">2.3 Conflicts</a></li>
+<li><a href="#sec-2.4">2.4 Update and Status</a></li>
+<li><a href="#sec-2.5">2.5 A typical day using SVN</a></li>
+<li><a href="#sec-2.6">2.6 Major Changes</a></li>
+<li><a href="#sec-2.7">2.7 Branch Stategy</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3 Debugging</a>
+<ul>
+<li><a href="#sec-3.1">3.1 Logging and Sigtraps</a></li>
+<li><a href="#sec-3.2">3.2 pdbx</a></li>
+<li><a href="#sec-3.3">3.3 Totalview</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4 Performance Analysis</a></li>
+<li><a href="#sec-5">5 Preprocessor Macros</a></li>
+<li><a href="#sec-6">6 Inputs</a></li>
+<li><a href="#sec-7">7 Initialization</a>
+<ul>
+<li><a href="#sec-7.1">7.1 System paramters</a></li>
+<li><a href="#sec-7.2">7.2 PIC</a></li>
+<li><a href="#sec-7.3">7.3 Fluid</a></li>
+<li><a href="#sec-7.4">7.4 Field(s)</a></li>
+</ul>
+</li>
+<li><a href="#sec-8">8 PIC integration</a></li>
+<li><a href="#sec-9">9 Fluid integration</a></li>
+<li><a href="#sec-10">10 Boundary Conditions</a></li>
+<li><a href="#sec-11">11 Output</a></li>
+<li><a href="#sec-12">12 Result Analysis: IDL</a></li>
+<li><a href="#sec-13">13 Result Analysis: Other</a></li>
+<li><a href="#sec-14">14 TESTING:</a>
+<ul>
+<li><a href="#sec-14.1">14.1 Testing Routines</a></li>
+<li><a href="#sec-14.2">14.2 Testing Output</a></li>
+</ul>
+</li>
+<li><a href="#sec-15">15 APPENDIX: Working at BU </a>
+<ul>
+<li><a href="#sec-15.1">15.1 Where to find psvn.el at BU:</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1">1 Introduction</h2>
+<div id="text-1">
+
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2">2 Version control and Repository</h2>
+<div id="text-2">
+
+
+</div>
+
+<div id="outline-container-2.1" class="outline-3">
+<h3 id="sec-2.1">2.1 Intro</h3>
+<div id="text-2.1">
+
+<p>SVN is used to keep a history of changes and to share revisions. It is just
+one of many <a href="http://betterexplained.com/articles/a-visual-guide-to-version-control/">version control</a> systems out there, and there are many 
+<a href="http://msdn.microsoft.com/en-us/library/bb668955.aspx">stratagies</a> for using them. You can access it using the command line, and
+there are online <a href="http://svnbook.red-bean.com/en/1.5/index.html">manuals</a> to guide you in doing so (svn help <i>command</i>, works
+too). Finally, there is an emacs mode, <a href="http://www.xsteve.at/prg/emacs/psvn.el">psvn.el</a>, that can make life a lot
+easier (once this file is <a href="#sec-15.1">loaded</a>, you can activate this mode by pressing
+M-x and typing 'svn-status', followed by the directory you are using to hold
+your local copy of the eppic files).
+</p>
+<p>
+The main concecpt is to have a history of changes saved in a directory called
+a repository. Using SVN, you interact with this repository, 'downloading' and
+'uploading' changes and comments. You can download an old copy of the files
+or the latest. Your downloaded copy has an extra directory '.svn' in every
+directory of the local copy. This just helps SVN know where to find the 
+repository and what files should be copied over. DONT delete or move these 
+'.svn' directories, or things will get very confusing. 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2.2" class="outline-3">
+<h3 id="sec-2.2">2.2 Major Commands</h3>
+<div id="text-2.2">
+
+<ul>
+<li>
+'svn checkout': get a fresh copy of the repository
+</li>
+<li>
+'svn update': while in your local copy, make sure the files are as new
+as possible
+</li>
+<li>
+'svn commit': submit your changes; -m message will record a message, but
+if you don't use this, the default text editor will open to ask for one. 
+</li>
+<li>
+'svn add <i>file</i>': this adds the file to the repository; WARNING: it wont
+actually be added until the following 'commit'.
+</li>
+<li>
+'svn add <i>directory</i>': add the directory and ALL the files in it.
+</li>
+<li>
+'svn mv': move a file in your copy and (after a commit) in the repository.
+</li>
+<li>
+'svn mkdir': make a new directory here and in the repository.
+
+</li>
+</ul>
+</div>
+
+</div>
+
+<div id="outline-container-2.3" class="outline-3">
+<h3 id="sec-2.3">2.3 Conflicts</h3>
+<div id="text-2.3">
+
+<p>Sometimes two people edit the same file,
+at the same time, 'uploading' one after another. The last person to submit 
+their changes has a conflict; in other words, their changes are temporarorly 
+rejected. The file is returned in a format similar to a 'diff' execution. 
+Sections that differ from one person's work to another's are placed back to
+back and highlighted with '&lt;&lt;&lt;&lt;&lt;' and '====' lines. The person with the 
+conflict must decide which block to keep or how to mix the two. Three other
+files are returned when a conflict happens, all with the same name as the 
+rejected file but with different suffixes: .mine, .r**, r!!. ** and !! 
+will be two different numbers. ** will be how the file looked before either 
+person made changes. !! will be how the other person saved their work 
+(and changes). .mine will obviously be the way you have changed the file, 
+without all the '&lt;&lt;&lt;&lt;' and '====' sections. These are there to help in case
+the formating in the rejected file is confusing. Once all your work is done,
+'svn resolved' tells your .svn folder you are ready to actually save your 
+changes. Now commiting should happen cleanly
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2.4" class="outline-3">
+<h3 id="sec-2.4">2.4 Update and Status</h3>
+<div id="text-2.4">
+
+<p>'svn update' lists all the files in your local copy, each one preceeded by 
+a character. The characters have the following meanings:
+</p><ul>
+<li>
+?: File is unknown to the repository; if it needs to be know, add it, but
+in many cases these are temporary files (*.o etc)
+</li>
+<li>
+M: Modified file
+</li>
+<li>
+C: Conflict
+</li>
+<li>
+G: Confilct, but a simple diff ment an automatic resolution, ie two people
+edited the same file in distinctly different sections. 
+
+</li>
+</ul>
+
+<p>'svn status -u' reports the same information, but actually does nothing;
+this is useful incase you expect a conflict and you want to see where it 
+might happen.
+</p>
+
+</div>
+
+</div>
+
+<div id="outline-container-2.5" class="outline-3">
+<h3 id="sec-2.5">2.5 A typical day using SVN</h3>
+<div id="text-2.5">
+
+
+<ol>
+<li>
+Run 'svn update' or 'svn status -u' then 'svn update'
+
+<p>
+If everyone is as current as possible, this will help limit conflicts.
+</p></li>
+<li>
+Make your changes. Hopefully these are small and take a few hours (or up 
+to a day or two) to complete. 
+</li>
+<li>
+Run 'svn update' or 'svn status -u' then 'svn update'
+</li>
+<li>
+Resolve any conflicts. 
+</li>
+<li>
+Run 'svn commit'
+
+</li>
+</ol>
+
+<p>We should be getting emails everytime someone makes changes, so there should
+be few suprises when an update is done.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2.6" class="outline-3">
+<h3 id="sec-2.6">2.6 Major Changes</h3>
+<div id="text-2.6">
+
+
+<p>
+Sometimes your edits will take more than a day to complete. For this we use
+what are called branches. A branch is just an efficient duplication of the
+repository, in the repository. Now it's like having two repositories, whose
+histories will deviate a bit. Once all the work is done,
+'svn merge <i>repo1</i> <i>repo2</i> <i>result_dir</i>' is used to do the equivilant of a
+commit from repo1 to repo2, but it saves all the files, conflicts or not,
+in the <i>result_dir</i>. Once all the conflicts are resolved, they are saved in
+one of the branches, and the other is left alone.
+</p>
+<p>
+How is this typically use? There is a repository directory called 'trunk',
+and it contains the copy of the files (and history) of the main program. 
+Any major modification get's it's own copy, in it's own folder, for example
+'inject_dev'. The 'trunk' copy of the code will be updated for bugs and 
+minor improvements. The 'inject_dev' will involve major changes. While
+these changes are done, bug fixes from the main 'trunk' are periodicly 
+integrated by the 'inject_dev' developer by performing 
+'svn merge <i>trunk</i> <i>inject_dev</i> <i>myinject_dev_wbugfix</i>'. After each of these,
+work continues in the <i>myinject_dev_wbugfix</i> local copy. At the end of all 
+this, there will be a final merge, which should be minor because of the 
+periodic merges, and the results are commited back to the 'trunk'. Since it
+has served it's purpose, the 'inject_dev' branch is ignored from then on.
+</p>
+<p>
+Branches are also used as markers. We will make branches called 'version1',
+'version2',&hellip; etc., and because these branches are efficient copies, they
+don't take up much space. It makes it easy though to grab the latest 'stable'
+verstion, since you can checkout one branch over another (forexample the 
+main development trunk). 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2.7" class="outline-3">
+<h3 id="sec-2.7">2.7 Branch Stategy</h3>
+<div id="text-2.7">
+
+
+
+
+   <img src="svn_how_to.png"/>
+<p>
+A. The repository has a branch called 'trunk', where the general history is
+kept.
+</p>
+<p>
+B. At some point, we decide to isolate 'version 1', because X amount of 
+features work and are (mostly) reliable. 
+</p>
+<p>
+C. A major change is needed, so we make a seperate branch: 'inject dev'
+</p>
+<p>
+D. A bug is found in version 1, fixed and it's change is merged with the 
+'trunk'
+</p>
+<p>
+E. The bug fix is passed along to 'inject dev' from the 'trunk' through a 
+merge. 
+</p>
+<p>
+F. Work on 'inject dev' is done, and it is merged with the 'trunk'.
+</p>
+<p>
+G. Now that new features are added, 'version 2' is created. 
+</p>
+<p>
+Point (C) can be eliminated if 'version 1' is really expected to be 
+only used as a marker. Some programs have their most recent 'stable' version
+updated only for bug fixes, as soon as they are found and fixed, while
+others don't touch a 'stable' version and bug fixes are made to the trunk.
+In this second case, the fixes are shared with the users after only another
+stable version is released. 
+</p>
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3">3 Debugging</h2>
+<div id="text-3">
+
+
+</div>
+
+<div id="outline-container-3.1" class="outline-3">
+<h3 id="sec-3.1">3.1 Logging and Sigtraps</h3>
+<div id="text-3.1">
+
+</div>
+
+</div>
+
+<div id="outline-container-3.2" class="outline-3">
+<h3 id="sec-3.2">3.2 pdbx</h3>
+<div id="text-3.2">
+
+</div>
+
+</div>
+
+<div id="outline-container-3.3" class="outline-3">
+<h3 id="sec-3.3">3.3 Totalview</h3>
+<div id="text-3.3">
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4">4 Performance Analysis</h2>
+<div id="text-4">
+
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5">5 Preprocessor Macros</h2>
+<div id="text-5">
+
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6">6 Inputs</h2>
+<div id="text-6">
+
+</div>
+
+</div>
+
+<div id="outline-container-7" class="outline-2">
+<h2 id="sec-7">7 Initialization</h2>
+<div id="text-7">
+
+
+</div>
+
+<div id="outline-container-7.1" class="outline-3">
+<h3 id="sec-7.1">7.1 System paramters</h3>
+<div id="text-7.1">
+
+</div>
+
+</div>
+
+<div id="outline-container-7.2" class="outline-3">
+<h3 id="sec-7.2">7.2 PIC</h3>
+<div id="text-7.2">
+
+
+</div>
+
+<div id="outline-container-7.2.1" class="outline-4">
+<h4 id="sec-7.2.1">7.2.1 RejectND: initializing an abitrary distribution.</h4>
+<div id="text-7.2.1">
+
+<p>RejectND has the following parameters:
+</p><ul>
+<li>
+dist: particle_dist distribution array
+</li>
+<li>
+id: current distribution id number
+</li>
+<li>
+iran: random number generator seed
+</li>
+<li>
+den_func: a PTYPE function that returns the density in units of n0
+
+<p>
+The key to the routine is den_func, which for a flat distribution, equal
+to a density of n0 every where, always returns 1. For depletions, 
+den_func returns a number between 0 to 1, and, of course, for 
+accumilations the return values should be greater than 1. 
+</p></li>
+</ul>
+
+</div>
+
+<div id="outline-container-7.2.1.1" class="outline-5">
+<h5 id="sec-7.2.1.1">7.2.1.1 Example (1): Hole Function</h5>
+<div id="text-7.2.1.1">
+
+
+<pre class="src src-c++"><span style="color: #a020f0;">inline</span> <span style="color: #228b22;">PTYPE</span> <span style="color: #0000ff;">hole</span>(<span style="color: #228b22;">int</span> <span style="color: #b8860b;">id</span>,INDICIES(<span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">x</span>, <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">y</span>, <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">z</span>))
+{
+  <span style="color: #b22222;">// This function returns a constant density with a deep circular linear depletion
+</span>  <span style="color: #b22222;">// Adjust x for the position with respect to the entire domain decomposed system.
+</span>  <span style="color: #b22222;">// this function is only for 2d
+</span>  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">den</span>;
+  x=x+subdomain.id_number*nx;
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">rsqr</span>=Sqr(x-nx*nsubdomains/2)+Sqr(y-ny/2);
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">den_min</span>=param3[id];
+  <span style="color: #a020f0;">const</span> <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">routside_hole_sqr</span>=(Sqr(PTYPE(nx*nsubdomains)/2)+Sqr(PTYPE(ny/2)))/4.;
+  <span style="color: #a020f0;">const</span> <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">rinside_hole_sqr</span>=(Sqr(PTYPE(nx*nsubdomains/2))+Sqr(PTYPE(ny/2)))/32.;
+  <span style="color: #a020f0;">const</span> <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">routside_hole</span>=sqrt(routside_hole_sqr);
+  <span style="color: #a020f0;">const</span> <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">rinside_hole</span>=sqrt(rinside_hole_sqr);
+  <span style="color: #a020f0;">if</span> (rsqr&gt;routside_hole_sqr) den=1.0;
+  <span style="color: #a020f0;">else</span> <span style="color: #a020f0;">if</span> (rsqr&lt;routside_hole_sqr &amp;&amp; rsqr&gt;rinside_hole_sqr) {
+    <span style="color: #b22222;">// Linearly interpolate between rinside_hole and routside_hole:
+</span>    <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">m</span>=(den_min-1)/(rinside_hole-routside_hole);
+    <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">b</span>=1-m*routside_hole;
+    den=sqrt(rsqr)*m+b;
+  }
+  <span style="color: #a020f0;">else</span> den=den_min;
+  <span style="color: #a020f0;">return</span> den;
+};
+</pre>
+
+
+<p>
+This function ranges from <b>den_min</b> = <b>param3[id]</b> to 1.0, so the actual 
+distribution will range from <b>n0</b> * <b>param3[id]</b> to <b>n0</b>. There are three
+things to note:
+</p>
+<ol>
+<li>
+den_func must return a <b>PTYPE</b> value.
+</li>
+<li>
+den_func must always have the following inputs:
+int <b>id</b>,INDICIES(PTYPE <b>x</b>, PTYPE <b>y</b>, PTYPE <b>z</b>)
+
+<p>
+<b>id</b> is needed to access the density specific parameters, and INDICIES
+is a <b>C</b> preprocessor macro that replaces the list of x,y and z with
+the NDIM specific list (eg if NDIM = 2, the code complies PTYPE <b>x</b>, 
+PTYPE <b>y</b>).
+</p>
+</li>
+<li>
+There needs to be #if NDIM == 1,2 or 3,#endif blocks to make this
+functions NDIM independant. The code listed above would fail for 
+NDIM==1, because the code expects <b>y</b> to be passed to the routine. The
+problem is that for NDIM==1, <b>y</b> does not exist in the compiler's 
+'eyes'.
+
+</li>
+</ol>
+</div>
+
+</div>
+
+<div id="outline-container-7.2.1.2" class="outline-5">
+<h5 id="sec-7.2.1.2">7.2.1.2 Example (2): Column of Plasma, decay to background</h5>
+<div id="text-7.2.1.2">
+
+
+
+
+<pre class="src src-c++"><span style="color: #a020f0;">inline</span> <span style="color: #228b22;">PTYPE</span> <span style="color: #0000ff;">gaussian_axis</span>(<span style="color: #228b22;">int</span> <span style="color: #b8860b;">id</span>,INDICIES(<span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">x</span>, <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">y</span>, <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">z</span>))
+{
+<span style="color: #b22222;">// U is a unit vector defining the direction of column
+// A is a vector point from the "origin", ie the middle of the box to x,y,z
+// B is the vector from the nearest center of the column to x,y,z
+// Param3-5 = Ux,Uy,Uz (need to be normalized ahead of time)
+// Param6 = height of column maximum in units of N0
+// Param7 = sqr(1/variance)
+// Param8 = background height, typically 1 or 0 (default)
+</span>  x=x+subdomain.id_number*nx;
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">Ux</span>=param3[id],<span style="color: #b8860b;">Uy</span>=param4[id],<span style="color: #b8860b;">Uz</span>=param5[id];
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">den</span>;  
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">Ax</span>=x-PTYPE(nx*nsubdomains/2),<span style="color: #b8860b;">Ay</span>=0,<span style="color: #b8860b;">Az</span>=0;
+<span style="color: #da70d6;">#if</span> NDIM&gt;=2
+  Ay=y-PTYPE(ny/2);
+<span style="color: #da70d6;">#elsif</span> NDIM == 3
+  Az=z-PTYPE(ny/2);
+<span style="color: #da70d6;">#endif</span>
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">L</span>=Ax*Ux+Ay*Uy+Az*Uz;
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">Bx</span>=Ax-L*Ux,<span style="color: #b8860b;">By</span>=Ay-L*Uy,<span style="color: #b8860b;">Bz</span>=Az-L*Uz;
+  <span style="color: #228b22;">PTYPE</span> <span style="color: #b8860b;">distsqr</span>=Sqr(Bx)+Sqr(By)+Sqr(Bz);
+  den = param6[id]*exp(-distsqr*param7[id])+param8[id];
+  <span style="color: #a020f0;">return</span> den;
+};
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-7.2.1.3" class="outline-5">
+<h5 id="sec-7.2.1.3">7.2.1.3 Example (3): Column of Plasma, decay to nothing</h5>
+<div id="text-7.2.1.3">
+
+
+
+<p>
+As you can see from Example (2), the decay to nothing can be set by making 
+<b>param8</b> = 0. This is useful if you are going to use two distributions to 
+represent one type of particle, say in the case where you have a column of 
+hot ions interacting with a background of cold ions. Here you would set one
+distribution to a random background of <b>n0</b>, and the other would use the 
+gaussian column that decays to 0. Having this option of setting the background
+level through a parameter is convient, but the programmer should include tests
+that prohibit the density at any one point from being less than zero. For the
+above example, this would be the case if either abs(<b>param6</b>) &gt; <b>param8</b> and 
+<b>param6</b> is negative or <b>param8</b> is negative. This testing should be included
+in the routine <b>check</b>.
+</p>
+</div>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-7.3" class="outline-3">
+<h3 id="sec-7.3">7.3 Fluid</h3>
+<div id="text-7.3">
+
+</div>
+
+</div>
+
+<div id="outline-container-7.4" class="outline-3">
+<h3 id="sec-7.4">7.4 Field(s)</h3>
+<div id="text-7.4">
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-8" class="outline-2">
+<h2 id="sec-8">8 PIC integration</h2>
+<div id="text-8">
+
+</div>
+
+</div>
+
+<div id="outline-container-9" class="outline-2">
+<h2 id="sec-9">9 Fluid integration</h2>
+<div id="text-9">
+
+</div>
+
+</div>
+
+<div id="outline-container-10" class="outline-2">
+<h2 id="sec-10">10 Boundary Conditions</h2>
+<div id="text-10">
+
+</div>
+
+</div>
+
+<div id="outline-container-11" class="outline-2">
+<h2 id="sec-11">11 Output</h2>
+<div id="text-11">
+
+</div>
+
+</div>
+
+<div id="outline-container-12" class="outline-2">
+<h2 id="sec-12">12 Result Analysis: IDL</h2>
+<div id="text-12">
+
+</div>
+
+</div>
+
+<div id="outline-container-13" class="outline-2">
+<h2 id="sec-13">13 Result Analysis: Other</h2>
+<div id="text-13">
+
+</div>
+
+</div>
+
+<div id="outline-container-14" class="outline-2">
+<h2 id="sec-14">14 TESTING:</h2>
+<div id="text-14">
+
+
+</div>
+
+<div id="outline-container-14.1" class="outline-3">
+<h3 id="sec-14.1">14.1 Testing Routines</h3>
+<div id="text-14.1">
+
+</div>
+
+</div>
+
+<div id="outline-container-14.2" class="outline-3">
+<h3 id="sec-14.2">14.2 Testing Output</h3>
+<div id="text-14.2">
+
+<p>To test the output, you need to write a small shell script that will
+</p><ol>
+<li>
+Call eppic and tell it to use your test input.
+</li>
+<li>
+Call idl and tell it ouse your test idl program.
+</li>
+<li>
+Return the status of the test, so the make file can run the tests 
+automaticly. 
+</li>
+</ol>
+
+</div>
+
+<div id="outline-container-14.2.1" class="outline-4">
+<h4 id="sec-14.2.1">14.2.1 Fluid Flux example</h4>
+<div id="text-14.2.1">
+
+<p>You can find a basic example in tests/output/fluid_flux.sh
+</p>
+</div>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-15" class="outline-2">
+<h2 id="sec-15">15 APPENDIX: Working at BU </h2>
+<div id="text-15">
+
+
+</div>
+
+<div id="outline-container-15.1" class="outline-3">
+<h3 id="sec-15.1">15.1 Where to find psvn.el at BU:</h3>
+<div id="text-15.1">
+
+<p><i>usr3/graduate/yannpaul</i>.emacsfiles/psvn.el
+You can 
+</p></div>
+</div>
+</div>
+<div id="postamble"><p class="author"> Author: Meers Oppenheim and Yann Tambouret
+<a href="mailto:meerso@bu.edu">&lt;meerso@bu.edu&gt;</a>
+</p>
+<p class="date"> Date: 2008-10-14 12:34:37 EDT</p>
+<p>HTML generated by org-mode 6.07b in emacs 21</p>
+</div></body>
+</html>

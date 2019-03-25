@@ -1,0 +1,19 @@
+
+
+\chapter{Introduction}
+
+Something snappy going here...
+
+\chapter{Subversion}
+Apache Subversion is a version control software that allows us to maintain a repository of file versions that we check in and out for editing. In order to check files out (i.e. create a local copy that you can edit), you will need to enter the 
+following command at the prompt
+\begin{center} svn checkout svn+ssh://katana.bu.edu/project/eregion/.astrosvn/eppic/trunk/ ./[destination_directory] \end{center}
+The terminal will print a capitol A next to each item that svn adds to your local directory.
+
+When you are ready to submit your changes - this is called committing, or checking in - make sure you are in the ``/project/eregion/[YourID]/eppic/'' directory and enter the command
+\begin{center} svn commit [path] -m ``[informational message]'' \end{center}
+(NB: The reason you must be in the top-level directory of the distribution you originally checked out is that that directory contains the hidden subdirectory ``.svn''. This subdirectory, in turn, contains information on your local working copy of the distribution). 
+
+In order to make sure you are working on the latest copy of some file, you must update your working copy. This is simply done by entering the command
+\begin{center} svn update \end{center}
+while in the directory containing '.svn'. The terminal will print a capitol U next to each item it updates.

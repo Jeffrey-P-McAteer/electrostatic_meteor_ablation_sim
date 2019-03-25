@@ -1,0 +1,254 @@
+
+
+\chapter{Testing}\label{c:testing}
+
+\section{Introduction}
+
+In this section we present our approach to testing EPPIC and its inidividual
+routines. There are three aspects of EPPIC that we test: (1) the
+program as a whole, (2) individual routines and modules
+(\emph{e.g. the ArrayND class}) and (3) the programs output and
+analysis routines (\emph{e.g. IDL processing routines}). The next
+three sections discuss how to setup these tests.
+
+\section{Eppic Testing}
+
+This is still a work in progress... more to come soon. 
+
+\section{Routine Testing}
+
+Routine testing may seem like overkill, and one needs to carefully
+consider what should be tested. There are two main reasons for
+building these tests. First, a suprising amount of time is spent on
+adding new code, and this approach provides a systematic framework for
+adding code efficiently. Next, these tests provide an educational
+resource for both you, the developer, and students new to programming
+EPPIC or coding in general. These tests provide numours examples of
+simple exercises demonstrating an isolated component found in
+EPPIC. Finally, a minor purpose is to identify compatibility issues
+when installing EPPIC on new machines. 
+\newline
+\noindent Routine testing follows a general pattern: 
+
+\begin{itemize}
+\item You develope a small c++ program 
+  (\emph{subroutine}\_test.cc) that calls the routine with inputs
+that will produce a predictable outcome. The outcome is tested and the
+program returns 1 if it passes, 0 if it fails. 
+\item Next you write a shell script (\emph{subroutine}\_test.sh) to run
+  this program several times, at 
+  least once for serial execution and once for parallel
+  execution. This is needed because most of the routines depend on MPI
+  and various senarios should be tested.
+\item Then you add the shell script and the test program to the
+  tests/routines/ directory and specific
+  Makefile.am variable definitions, which are then used to
+  appropriately generate the 'make check' target. 
+\item Finally, run 'make check' until the test programs succeed. 
+\end{itemize}
+
+Once you've perfected this procedure on one machine, running 'make
+check' on other machines will help identify compadability issues and
+perhaps unknown bugs. The trick to making these tests useful is to
+determine the right set of ideal inputs for the routines. 
+
+\subsection{Building the test program}
+
+As more examples are added to the code, a specific recipie will
+develope. For now, writing these test programs are a bit ad-hoc. The
+file \textbf{tests/routines/pic\_test.cc\_template} should be used as a
+starting-off point, so copy this if your writing code to test a
+PIC-related routine. As we add tests for the other routines in EPPIC
+(including the initialization routines required in the above
+template), more examples and templates will become
+available. Unfortunately EPPIC has many global variables, and this
+requires most of the test routines to declare and define nearly all of
+them. This too will improve in the future as we try to rein these
+in. 
+
+In the template, you will see a \textbf{for}-loop stepping through the
+number of timesteps, and this is intended to test scaling, efficencly
+and memory leaks (c.f. subsection \ref{ss:testing_scaling}). Whether
+you are testing these other aspects of the code or not, put your test
+and call to your subroutine inside this \textbf{for}-loop, because by
+default this loop runs at least once. If your test passes, do nothing
+and the program should finish successfully. If your test fails,
+increment the variable \textbf{failed}, like so:
+\begin{lstlisting}[language=C++]
+  /* test_value and real_value are made-up for this example */
+  if (test_value!=real_value) failed++;
+\end{lstlisting}
+Finally, you should note that c++
+treats return values in a funny way. 0 and 1 are acceptable, otherwise 
+special system variables are needed to specify a different error
+code. 
+
+\subsection{Building the test shell script}
+
+For now, the shell scripts that call these test programs are roughly
+the same. This motivates an automated process for dealing with the
+test programs, which is something we can consider in the near
+future. Below we show the shell script
+\textbf{efield\_quasineut\_test.sh} which runs 
+\textbf{efield\_quasineut\_test.cc} and tests the
+\textbf{efield\_quasineut} routine. 
+% REMOVED FROM REPOSITORY SO THIS LINE WONT COMPILE CORRECTLY:
+%\lstinputlisting[caption=tests/routines/efield\_quasineut\_test.sh,numbers=left,stepnumber=2]{../tests/routines/efield_quasineut_test.sh}
+Starting at line 2, a small message documents what the test does. At
+line 7, we print a little message saying what is being tested. Using 7
+.'s ('....... ') presents a consistent message, needed when the uses
+runs 'make check'. On line 9, the script sources a file customized by
+the configure script, because mpi execution sometimes varies from
+system to system, the routine run\_mpi (used on line 14) needs to be
+customized for each system. Lines 12 and 14 show how the .cc programs
+are called and tested. If they fail, the shell script exits
+imideiately with a failed return value. Otherwise on the line 15 the
+script ends succesfully. You can essentially copy this script for your
+own tests. 
+
+\subsection{Adding test to the Makefile}
+
+Once you have a test program and a shell script to run it under
+multiple senarios, you need to add these files to their appropriate
+positions in the the automake template file \textbf{Makefile.am}. Here
+we describe in detail the meaning of each piece of the file, but below
+you'll find a todo list for adding your tests. First we start with
+compiling the tests. As discussed elsewhere (Chapter
+\ref{c:bulid_sys}), automake uses variable names to piece together
+their use. Here we list the variables used in compiling the test
+programs: 
+%\lstinputlisting[caption=Compiling tests in
+%tests/routines/Makefile.am,numbers=left,stepnumber=2,firstline=24]{../tests/routines/Makefile.am} 
+The \textbf{check\_PROGRAMS} variable (line 26) lists the programs to
+be compiled when the user runs 'make check'. Each \emph{program}
+listed should have a corresponding \textbf{\emph{program}\_SOURCES}
+variable listing the source needed to compile the program. While the
+configure script will appropriately define the compiler's options, you
+can customize this process with the \textbf{INCLUDES} (header file
+search paths), \textbf{LDADD} (libraries and library search path), and
+\textbf{DEPENDENCIES} (compilation dependencies that are not actually
+compiled) variables. The \textbf{EXTRA\_DIST} variables lists files
+that may get overlooked my automake during the definition of the list
+of files packaged into a 'tar' file with the 'make dist' call. The
+\textbf{check\_SCRIPTS} lists shell scripts that are created at some
+point during the build process and should be monitored (for possible
+removal and updating).  
+
+Before we write up the todo list of things you need to do to add your
+program to this file, we will describe where to list the shell script.  
+%\lstinputlisting[caption=Shell scripts and listing tests in
+%tests/routines/Makefile.am,numbers=left,stepnumber=2,firstline=12,lastline=23]{../tests/routines/Makefile.am}    
+The variable \textbf{TESTS} lists all the tests to do when 'make
+check' is run. We assign it the value of two variables, whose names
+are not interpreted by automake but resemble the naming convention
+used elsewhere. \textbf{TESTS\_ccprograms} holds a space-separated
+list of tests that involve only a single execution of a C++
+program. Since most of the tests involve multiple executions, this
+variable is likely to remain empty. The more important variable
+\textbf{TESTS\_shellscripts} (lines 16-19) lists the shell scripts make
+should run. For clarity, each script is listed on it's own line.
+
+Now we summarize with a small todo list:
+\begin{enumerate}
+  \item Add the name of your test C++ program to the
+    \textbf{check\_PROGRAMS} variable. 
+  \item Make a corresponiding \textbf{\emph{myprogram}\_SOURCES}
+    variable that lists all the source code needed to compile your
+    program \emph{myprogram}. This is usually only one file. 
+  \item If needed, adjust the variables used in compiling:
+    \textbf{INCLUDES} (header file 
+    search paths), \textbf{LDADD} (libraries and library search path), and
+    \textbf{DEPENDENCIES}.
+  \item Add your shell script to the list of test shell scripts
+    defined in the variable \textbf{TESTS\_shellscripts}.
+\end{enumerate}
+
+To enact your changes, return to the packages root directory. Now run
+\textbf{automake} to convert the \textbf{Makefile.am} into a
+\textbf{Makefile.in}. Rerun the configure script to make the
+\textbf{Makefile}: \textbf{./configure}. And finally, run \textbf{make
+  check}. The make file should report if the tests, including the new
+one you just added, successfully ran. 
+\begin{lstlisting}[caption=A typical result of running 'make check',numbers=left,stepnumber=2]
+mpic++  -O3   -o efield_quasineut_test efield_quasineut_test.o 
+../../src/libeppic.a ...A LOT MORE STUFF...
+
+make[3]: `run_mpi.tests' is up to date.
+make[3]: Leaving directory `/home/yannpaul/src/eppic/tests/routines'
+/usr/bin/make  check-TESTS
+make[3]: Entering directory `/home/yannpaul/src/eppic/tests/routines'
+....... TESTING efield_test.sh
+....... Single processor
+....... Multi processor
+PASS: efield_test.sh
+....... TESTING pic_current_test.sh
+....... Multi processor
+....... Single processor
+PASS: pic_current_test.sh
+....... TESTING efield_quasineut_test.sh
+....... Single processor
+; WARNING: N0 for fluid adjusted!
+	n0avgd0 = 1e+11
+....... Multi processor
+; WARNING: N0 for fluid adjusted!
+	n0avgd0 = 1e+11
+PASS: efield_quasineut_test.sh
+....... TESTING efield_petsc_test.sh
+....... Single processor
+....... Multi processor
+PASS: efield_petsc_test.sh
+==================
+All 4 tests passed
+==================
+make[3]: Leaving directory `/home/yannpaul/src/eppic/tests/routines'
+make[2]: Leaving directory `/home/yannpaul/src/eppic/tests/routines'
+make[2]: Entering directory `/home/yannpaul/src/eppic/tests'
+make[2]: Nothing to be done for `check-am'.
+make[2]: Leaving directory `/home/yannpaul/src/eppic/tests'
+make[1]: Leaving directory `/home/yannpaul/src/eppic/tests'
+\end{lstlisting}
+When you run make check, you'll probably see lines similar to those on
+lines 1-3, which I've abriviated here. Then on line 6 make is running
+the \textbf{check-TESTS} target. Starting on line 8, each test should
+run 4 lines, listing what it's doing and if it succeeds. Finally, line
+29 summarizes. If you don't get to this point, let us know, because
+this process should be the painless part of testing (where as getting
+your C++ tests to actually succeed is usually the bottle-neck).
+
+\subsection{Testing parallel scaling}\label{ss:testing_scaling}
+In the future, we would like to make parallel scaling testing
+automated.
+
+\subsection{Testing optional code}
+In the tests/routines Makefile.am file, there are some PETSC variables
+that get definied only if PETSC is available. If you are using a
+non-crucial-to-EPPIC library, but one that is needed for  your code,
+you may want 
+to include it using similar protective measures. This will allow other
+people to use EPPIC even if they don't have the same libraries you
+have access too. 
+
+%\lstinputlisting[caption=Including optional code in
+%tests/routines/Makefile.am,numbers=left,stepnumber=2,firstline=2,lastline=10]{../tests/routines/Makefile.am}     
+
+The \textbf{HAVE\_PETSC} variable used in the conditional on line 2 is
+actually defined in the configure script, which actaully tests if you
+have access to the PETSc library. This is done with the
+\textbf{AM\_CONDITIONAL M4} routine, which defines a
+\emph{conditional} variable for use by \emph{A}uto\emph{M}ake
+depending on the outcome of a test. Here it tests if the environment
+variable \textbf{\$PETSC\_DIR} is \emph{not} empty:
+\begin{lstlisting}[language=bash,title=Defining HAVE\_PETSC in the
+  configure script]
+AM_CONDITIONAL([HAVE_PETSC],[test ! x$PETSC_DIR = x])
+\end{lstlisting}
+Within the \textbf{if}-block of the Makefile.am file, variables that list the
+C++ programs and test shell scripts are defined. These variables are
+included in the appropriate test variables. If PETSc is not available,
+then this block is not run and these library-dependant variables will
+remain empty and the corresponding programs are not included. 
+
+\section{Analysis Testing}
+
+This section will describe testing of output routines and post EPPIC
+workup. To come later. 

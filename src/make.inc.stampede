@@ -1,0 +1,109 @@
+
+include make.options
+
+#-----------------------------------------------------------------------------
+# Contains definitions customized for this system
+#-----------------------------------------------------------------------------
+
+# library locations, compiler/program definitions
+CPPFLAGS = -DF_PRECISION=$(F_PRECISION) \
+	-DP_PRECISION=$(P_PRECISION) \
+	-DNDIM=$(NDIM) 
+CC=mpicc
+CXX = mpicxx
+CXXCPP = 
+CXXFLAGS_OPT = -O2 -xhost
+CXXFLAGS_DEBUG = -O0 -Wall
+FFLAGS = -O4
+FFLAGS_DEBUG = -O0
+FFTWLIBDIR = $(TACC_FFTW3_LIB)
+FFTWINCDIR = $(TACC_FFTW3_INC)
+
+HDF5LIBDIR = $(TACC_HDF5_LIB)
+HDF5INCDIR = $(TACC_HDF5_INC)
+HDF5LIBS = -lhdf5_hl -lhdf5
+
+MPICXX = mpicxx
+TIMER = time
+EPPIC_FFTW_USE_D_PREFIX=1
+
+BIN = $(BINDIR)/$(BINNAME)
+
+FFTWLIBS = 
+
+
+ifeq ($(USE_DOMAINS),1)
+	FFTWLIBS = -ldrfftw_mpi -ldfftw_mpi -ldrfftw -ldfftw
+	CPPFLAGS += -DUSE_DOMAINS=1
+endif
+
+ifeq ($(TARG_BUILD_SCENARIO),dbg) 
+	CXXFLAGS = -g $(CXXFLAGS_DEBUG)
+	CPPFLAGS += -DDEBUG=1  -DCHECK=1
+else
+	CXXFLAGS = $(CXXFLAGS_OPT)
+endif
+
+ifeq ($(DEBUG),1) 
+	CXXFLAGS = -g $(CXXFLAGS_DEBUG)
+	CPPFLAGS += -D DEBUG=1 
+		-D CHECK=1
+else
+	CXXFLAGS = $(CXXFLAGS_OPT)
+endif
+
+ifeq ($(PROFILING),1)
+	CXXFLAGS += -pg
+endif
+
+ifeq ($(EPPIC_FFTW_USE_D_PREFIX),1)
+	CPPFLAGS += -DEPPIC_FFTW_USE_D_PREFIX=1
+endif
+
+ifeq ($(USE_MPI),1)
+	CXX = $(MPICXX)
+	CPPFLAGS += -DUSE_MPI=1
+endif
+
+ifeq ($(VERBOSE),1)
+	CPPFLAGS += -DVERBOSE=1
+endif
+
+ifeq ($(USE_QN),1)
+	CPPFLAGS += -DUSE_QN=1
+endif
+
+LIBS =
+
+ifneq ($(TACC_T3PIO_INC),)
+   CXXFLAGS += -DHAVE_T3PIO=1 -I$(TACC_T3PIO_INC)
+   LIBS     += -L$(TACC_T3PIO_LIB) -lt3pio
+endif
+
+ifeq ($(HAVE_PETSC),1)
+	CPPFLAGS += -DHAVE_PETSC=1
+
+	# PETSCLIBDIR = $(TACC_PETSC_LIB)
+	# PETSCINCDIR = $(TACC_PETSC_DIR)/include
+	# PETSCLIBS = -lpetsc -lX11
+	# PETSCLIBS += -lsuperlu_dist_4.0 -lHYPRE -lparmetis -lmetis -lpthread -lscalapack
+	# LIBS += -L$(PETSCLIBDIR) $(PETSCLIBS)
+
+	PETSC_INC = $(TACC_PETSC_DIR)/include
+	LIBS += -L$(TACC_PETSC_LIB) -lpetsc -lX11 
+	# LIBS += -lsuperlu_dist_4.0 
+	LIBS += -lHYPRE -lparmetis -lmetis -lpthread -lscalapack
+endif
+
+ifeq ($(USE_P3DFFT),1)
+     CPPFLAGS += -D USE_P3DFFT=1 -DINTEL -DMEASURE -DSTRIDE1 -DFFTW
+#     P3DFFT_HOME=$(HOME)/p3dfft
+     P3DFFT_HOME=$(TACC_P3DFFT_DIR)
+     P3DFFT_INC=$(P3DFFT_HOME)/include
+     LIBS += -L$(P3DFFT_HOME)/lib -lp3dfft -L /opt/apps/intel13/mvapich2_1_9/fftw3/3.3.2/lib/ -lfftw3 -limf -lifcore 
+endif
+
+LIBS += -L$(FFTWLIBDIR) $(FFTWLIBS) -L$(HDF5LIBDIR) $(HDF5LIBS) -lm
+
+
+

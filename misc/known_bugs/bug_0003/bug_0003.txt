@@ -1,0 +1,32 @@
+ID: 0003
+STATUS: RESOLVED
+FILES: eppic.i
+NOTES:
+9/30/09 -- Yann
+	A poor job of reporting a memory allocation issue is done in
+	ArrayNd.h. In this example, run on 64 processors in virtual
+	mode (VN). In the initialization of the particles, an odd
+	error is reported during the construction of the absent
+	array. It seems to be an error due to insuficient memory,
+	thought that is not what is reported:
+
+	
+Error: Problem in ArrayNd
+	ArrayND<T,1> with index 0 equal to -1324193 not permitted
+
+
+9/30/09 -- Yann
+	The bug does not seem to be related to memory, though other
+	memory issues have not been ruiled out. The bug was due to the
+	scaling factor used in adjusting the pic disctributions np for
+	the first domain, which get's changed on injection runs. The
+	scaling was done using an integer and the size exceeded the
+	range for an integer, causing the value to loop back to
+	negative values. This has been awkwardly fixed for now, though
+	more testing is needed.
+
+
+10/1/09 -- Yann
+	The bug seems to be fixed, and now this input truely does lead
+	to a bad alloc error do to running out of memory (run with the
+	conditions described in the first note above).

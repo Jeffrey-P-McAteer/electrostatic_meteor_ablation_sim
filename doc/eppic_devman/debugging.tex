@@ -1,0 +1,107 @@
+
+\chapter{Debugging}
+
+\section{Introduction}
+
+
+\section{GDB}
+
+
+\section{Totalview}\index{Totalview}
+
+Totalview is propietary debugger resently installed on both the
+Bluegene and Linux (Katana) BU clusters. If you need to run the
+debugger in batch mode (submitting it to a batch queue), then the
+following sections will discuss how to do this. Batch mode, for
+example, is the only way to run programs on the Bluegene machine. On
+the linux cluster, debugging of short runs can be performed
+interactively, like so:
+\begin{lstlisting}[language=Bash]
+  # two processor run using Totalview debugger:
+  mpirun -np 2 totalview eppic input.in
+\end{lstlisting}
+
+While the following sections use the Bluegene enviroment to explain
+how to run Totalview using a batch-submitted job, the process is the
+same for any other submission program: test that remote programs can
+be displayed on your machine using the
+\textbf{\$DISPLAY}\index{\$DISPLAY} environment 
+variable; run 'totalview eppic' as the program; and pass the the
+display setting using the '-v \$DISPLAY' option. 
+
+\subsection{Setting your display}
+While totalview will run on the Bluegene machine, it's display is sent
+to your machine. \emph{On levi or lee}, the \textbf{\$DISPLAY}
+environment variable needs to be set to
+\textbf{$<$YOUR-IP-ADDRESS$>$:0}. This tells Bluegene where to send
+the images, but you also need to set your machine to accept the
+images. The following todo list assumes you are using a default Ubuntu
+installation, but the instrcutions should be similar under other Linux
+environments.\\ 
+
+\noindent Do the following in a terminal: 
+\begin{enumerate}
+\item As root/sudo, edit /etc/X11/xinit/xserverrc:\\
+  Remove the "-nolisten tcp"
+\item As root/sudo, edit /etc/gdm/gdm.conf:\\
+  Comment out the "DisallowTCP=true" so that it doesn't add the
+  -nolisten back.  
+\item Restart your display by logging out and back into your machine.
+\item Add \textbf{lee.bu.edu} and \textbf{levi.bu.edu} to the list of
+  allowed machines: 
+\begin{lstlisting}[language=Bash]
+  xhost +levi.bu.edu +lee.bu.edu
+\end{lstlisting}
+\item Run ifconfig, get your IP address from the value of ``inet addr:''
+\item SSH into lee or levi \emph{without(!)} display forwarding, ie
+  without ``-Y'' or ``-X'' flags.  
+\item Set the DISPLAY environment variable to
+  \textbf{$<$YOUR-IP-ADDRESS$>$:0}, this is usually done like so:
+
+\begin{lstlisting}[language=Bash]
+  # let's say your IP address is 000.000.000.000
+  setenv DISPLAY 000.000.000.000:0
+\end{lstlisting}
+\item Test that everything is setup correctly by running
+  \textbf{xclock\&}. If nothing happens,  
+  you'll get a message in a minute that a connection is not setup correctly.
+  Otherwise, you should see a little clock pop up. 
+\end{enumerate}
+
+\subsection{Submission Script}
+Now you should be all set to submit a totalview job. To do this, you
+first need to make sure eppic is configured for debbuging, by running:
+\begin{lstlisting}[language=Bash]
+  ./confugure --enable-debugging
+\end{lstlisting}
+\noindent and recompiling the code (run \textbf{make clean} before
+compiling). Now take a submission script that you've used for a run
+that fails; we will make two small modifications to allow Totalview to
+execute EPPIC. Change the following in the script:
+\begin{enumerate}
+\item Change the ``\# @ executable'' line from 
+\begin{lstlisting}[language=Bash]
+# @ executable = /bgl/BlueLight/ppcfloor/bglsys/bin/mpirun
+\end{lstlisting}
+to
+\begin{lstlisting}[language=Bash]
+# @ executable = /usr/bin/xterm
+\end{lstlisting}
+\item Next, add ``-display $<$YOUR-IP-ADDRESS$>$:0 -e totalview
+  mpirun -a'' to the begining of the ``\# @ arguments ='' value, like
+  so, for example:
+\begin{lstlisting}[language=Bash]
+# @ arguments =  -display 128.197.73.25:0 -e totalview mpirun -a \
+-verbose 1 -np $(numprocs) -cwd $(working_path) \
+-exe $(exepath)/eppic -args "$(working_path)/$(jobname).i"
+\end{lstlisting}
+\item Make sure you are running in co-processor mode (-mode CO, or the
+  default), otherwise Totalview will fail partially through the
+  initialization. 
+\end{enumerate}
+
+Now submit this job, and as soon as it runs, you will get an xterm
+window popping up on your screen, and this will be followed by two
+other windows that are the Totalview main windows.
+
+\section{Debug-Logging}

@@ -1,0 +1,24 @@
+With the original efield solver the timers were:
+
+
+  iter #  Wall Clock   Sys Clock   vadv time   xadv time      charge	collect      efield      output       fluid
+       0           0           0           0           0          34  	50          5503        3176            0
+      64        3924        3466         782         150         579  	1059        1212          93            0
+     128        3930        3486         783         147         581  	1045        1224          93            0
+     192        3928        3483         792         145         576  	1051        1222          92            0
+     256        3939        3489         786         146         576  	1052        1229          92            0
+
+
+With p3dfft, they became:
+
+  iter #  Wall Clock   Sys Clock   vadv time   xadv time      charge     collect      efield      output       fluid
+       0           0           0           0           0          31         232        1050        3212            0
+      64        2360        2256         784         202         559         400         610          71            0
+     128        2312        2213         781         168         556         398         598          71            0
+     192        2311        2212         784         160         561         395         608          71            0
+     256        2314        2211         781         170         558         398         596          71            0
+
+One curious effect is that collect also dropped.  Why?
+
+Also, the eield_p3dfft does not yet have filtering or other options
+available with efield. Nor has it been tested in 2D.

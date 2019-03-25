@@ -1,0 +1,191 @@
+
+MPI STARTING 8 PROCESSORS
+ MPI Error Handler: 0
+
+EPPIC Starting at: Wednesday 12/10/08 13:37:19
+
+; Version: 1.0
+; SVN Revision: 79
+; Please report bugs or send comments to:
+;meerso@bu.edu
+
+; Echoing EPPIC input file:
+
+;	; EPPIC parameter file (also readable by IDL)
+	title = 'Meteor 3D 512x256x256 psi=.3 Me=88me dx=0.04 n0=4E8'
+;      debug_log_level=0
+; WARNING: PREVIOUS LINE NOT UNDERSTOOD
+;      debug_log_time=70
+; WARNING: PREVIOUS LINE NOT UNDERSTOOD
+;	; Mesh size and Grid size
+	ndim_space = 3
+	nsubdomains = 4
+	nx = 32
+	dx = 0.05
+	ny = 32
+	dy = 0.05
+	nz = 128
+	dz = 0.05
+;	; Time step, number of time steps to run, and time-steps between output:
+	dt = 2e-06
+	nt = 4096
+	nout = 16
+	nout_avg = 2
+;	; Fraction of particles to output
+	npout = 4096
+;	; Define the dielectric of free space (default epsilon=8.8542e-12)
+	eps = 8.8542e-12
+;	; Bz in MKS (Tesla)
+	Bx = 5e-05
+;	; Damping width: (try fwidth=3)
+	fwidth = 3
+;	; Damping steepness: (try fsteep=3)
+	fsteep = 3
+;	; Time steps beteen dumps
+	iwrite = 2048
+;	; Start from t=0 (iread=0) or dump (iread=1)
+	iread = 0
+;	; Number of distributions to initialize
+	ndist = 2
+;	; Limit the frequency of outputing divj:
+	divj_out_subcycle = -1
+;	; Neutral parameters:
+	vth_neutral = 287
+	m_neutral = 5e-26
+;	; External  Electric field in y-direction
+	Ey0_external = 0.05
+;	; Kill non-oblique modes in 3D
+;	;	kill_modes_ang=75
+;	
+;	; 1st distribution: Meteor electrons (gaussian and 2x temp)
+	dist = 0
+	method0 = -3
+;	; number of particles, density, mass, charge, thermal velocity and drift speed
+	npd0 = 262144
+;	;      npd0 = 2000000
+	n0d0 = 4e+08
+;	; Make electrons too massive
+	md0 = 8e-29
+	qd0 = -1.602e-19
+;	; Increase the coll_rate 
+	coll_rate0 = 1100
+;	; Make the mass of the neutrals 100 x lighter(for e-) 
+	massd_neutral0 = 1e-27
+	vthd_neutral0 = 2035
+;	; Thermal velocities 
+	vxthd0 = 7191
+	vythd0 = 7191
+	vzthd0 = 7191
+;	;      vxthd0 = 10169.6
+;	;      vythd0 = 10169.6
+;	;      vzthd0 = 10169.6
+	vx0d0 = 0
+	vy0d0 = 0
+	vz0d0 = -2600
+	pnvx0 = 64
+	pnvy0 = 64
+	pnvz0 = 64
+	pvxmin0 = -40000
+	pvxmax0 = 40000
+	pvymin0 = -40000
+	pvymax0 = 40000
+	pvzmin0 = -40000
+	pvzmax0 = 40000
+;	;	Initialize a gaussion bump in position
+	init_dist0 = 1
+	param40 = 1
+	param60 = 100
+	param70 = 0.75
+	param80 = 1
+	param90 = 10169.6
+	part_pad0 = 1.4
+	vdist_out_subcycle0 = 16
+	part_out_subcycle0 = 16
+	flux_out_subcycle0 = 16
+	nvsqr_out_subcycle0 = 16
+;	
+;	
+;	;Fourth distribution - Meteor Ions (Gaussian column: warmer)
+	dist = 1
+;	;        npd1 = 262144
+	npd1 = 2000000
+	n0d1 = 4e+08
+	md1 = 5e-26
+	qd1 = 1.602e-19
+	coll_rate1 = 1500
+	vx0d1 = 0
+	vy0d1 = 0
+	vz0d1 = 0
+	vxthd1 = 287
+	vythd1 = 287
+	vzthd1 = 287
+;	;        vxthd1 = 405
+;	;        vythd1 = 405
+;	;        vzthd1 = 405
+	pnvx1 = 64
+	pnvy1 = 64
+	pnvz1 = 64
+	pvxmin1 = -2000
+	pvxmax1 = 2000
+	pvymin1 = -2000
+	pvymax1 = 2000
+	pvzmin1 = -2000
+	pvzmax1 = 2000
+	init_dist1 = 8
+	param31 = 0
+	param41 = 1
+	param51 = 0
+	param61 = 100
+	param71 = 0.75
+	param81 = 1
+	param91 = 405
+	part_pad1 = 1.4
+	subcycle1 = 16
+	vdist_out_subcycle1 = 16
+	part_out_subcycle1 = 16
+	flux_out_subcycle1 = 16
+	nvsqr_out_subcycle1 = 16
+;	
+;	
+;	
+
+
+;Checking a few parameters:
+;Distribution 0:
+;	X Temperature: 299.628 (K)
+;	Y Temperature: 299.628 (K)
+;	Z Temperature: 299.628 (K)
+;	X Debye Length: 0.0597333 (m)
+;	Y Debye Length: 0.0597333 (m)
+;	Z Debye Length: 0.0597333 (m)
+;	Plasma frequency: 120385 (rad/s) 19159.9 (Hz)
+;	Time steps per plasma oscillation: 26.0962
+
+;Distribution 1:
+;	X Temperature: 298.296 (K)
+;	Y Temperature: 298.296 (K)
+;	Z Temperature: 298.296 (K)
+;	X Debye Length: 0.0596004 (m)
+;	Y Debye Length: 0.0596004 (m)
+;	Z Debye Length: 0.0596004 (m)
+;	Plasma frequency: 4815.41 (rad/s) 766.396 (Hz)
+;	Time steps per plasma oscillation: 652.405
+;	Particles represented by single PIC particle: 1638.4
+;	Number of pic particles: 2000000
+
+
+; WARNING: N0 adjusted!
+	n0d1 = 3.8006e+07
+; WARNING: N0 adjusted!
+	n0d0 = 3.8006e+07
+;Time step      0: p=-5.7151e-17 4.4776e-11 7.1852e-44
+; WARNING: N0 adjusted!
+	n0d0 = 3.8006e+07
+
+Courant violation: fluid velocities too large
+
+EPPIC process 5 terminating all 8 processes
+
+Courant violation: fluid velocities too large
+
+EPPIC process 4 terminating all 8 processes

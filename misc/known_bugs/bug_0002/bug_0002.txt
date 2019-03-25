@@ -1,0 +1,11 @@
+ID: 0002
+STATUS: OPEN
+FILES: eppic.i
+NOTES:
+9/25/09 -- Yann
+	Somewhere between timestep 5700 and 5800 there is a particle
+	in the 0th distribution that has a nan position. This causes
+	the "Infinite energy" error to occur. This is likely due to an
+	injection bug, but it has not been investigated. I should try
+	running till 5700, then change nout to 1, so that I can find
+	more specifically which time step causes the issue.

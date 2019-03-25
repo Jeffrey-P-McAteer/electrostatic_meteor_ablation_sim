@@ -1,0 +1,816 @@
+ /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Solves for phi, the electric potential, using the quasi-neutral 
+     form of the inertialess electron momentum equation, in which the ion 
+     density and current can replace the analogous electron terms and all 
+     other parameters are from the electrons' definition. 
+
+     This equation resembles a modified Poisson's equation. 
+
+     We use the PETSC library, which allows for distributed solutions to
+     linear (used in this case, ie Ax=b), non-linear and matrix free 
+     problems. 
+
+     A detailed description of how this code works is given in:
+     JGR, VOL. 101, NO. A8, PAGES 17,273-17,286, AUGUST 1, 1996
+
+     The following paper is another example using this algorithm:
+     GRL, VOL. 22, NO. 4, PAGES 353-356, FEBRUARY 15, 1995
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+#include <stdio.h>
+#include <math.h>
+#include <sys/times.h> //Clock related functions
+#include "eppic.h"
+
+#ifdef USE_MPI
+#include "eppic-mpi.h"
+#endif
+
+#ifdef HAVE_PETSC
+#include "petscksp.h" // includes other header files, eg petscmat.h ...
+#endif
+
+/* If not configured for PETSC, use a dummy routine */
+#ifndef HAVE_PETSC
+void efield_quasineut(field &Efield, particle_dist *pic, fluid *fspecie,int useLU=1) 
+{
+  if (mpi_rank==0) {
+    cout << "\tThis version of EPPIC was not configured with PETSC\n"
+	 << "\tTherefore, efield_quasineut is not available. Please\n"
+	 << "\trecompile with access to PETSC or change your input\n"
+	 << "\toptions.";
+    terminate(TRUE,"\n");
+  }
+
+}
+
+#else
+
+
+/*
+  ONLY SETUP FOR 2D, FOR NOW.... 
+  And Bz (not Bx)
+  Current and density are collected seperately. This is because the 
+  gather routines give one or the other, but not both, even though they
+  should be able to get both in one shot. A modified gather routine
+  should be written in this case.
+*/
+
+inline int ixiyToR(int ix,int iy) {
+  return (ix*ny+iy+(nx*ny*nsubdomains))%(nx*ny*nsubdomains);
+}
+
+void efield_quasineut(field &Efield, particle_dist *pic, fluid *fspecie,
+		      int useLU=1) 
+{
+  
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Local Variables
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  
+  FArrayND_ranged Jx,Jy;
+  FArrayND_ranged den;
+  FArrayND Jtmp,dentmp;
+  const int nsize_diff[]={INDICIES(nx+1+1,ny,nz)}; 
+  int nstart_diff[]={INDICIES(-1,0,0)};
+  /* nx+1 because of possible subdomains */
+  const int nsize[]={INDICIES(nx+1,ny,nz)}; 
+
+  /* external functions */
+  void pic_density(FArrayND &den, int id, particle_dist &pic, FTYPE scaler);
+
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Initialize all other variables
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  /* padding by one cell in both directions for J, den for derivates */
+  Jx = FArrayND_ranged(nstart_diff, nsize_diff);
+  Jy = FArrayND_ranged(nstart_diff, nsize_diff);
+  Jtmp = FArrayND(nsize);
+  dentmp = FArrayND(nsize);
+
+  den = FArrayND_ranged(nstart_diff, nsize_diff);
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Need Ion Current for momentum eqn. solved below
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+  void pic_flux(particle_dist &pic,int dim,FArrayND &fluxDim,
+		FTYPE scaler, int n_avg);
+  // loop through each species
+  // if ions, calc. current and add to current
+  for (int id=0;id<ndist;id++) {
+    if (method[id]>=0) {
+      pic_flux(pic[id],0,Jtmp,pic[id].q/dx,1);
+      for(int ix=0;ix<nx;ix++)
+	for (int iy=0;iy<ny;iy++)
+	  for (int iz=0;iz<nz;iz++)
+	    Jx(INDICIES(ix,iy,iz)) = Jtmp(INDICIES(ix,iy,iz))+
+	      Jx(INDICIES(ix,iy,iz));
+      
+      pic_flux(pic[id],1,Jtmp,pic[id].q/dy,1);
+      for(int ix=0;ix<nx;ix++)
+	for (int iy=0;iy<ny;iy++)
+	  for (int iz=0;iz<nz;iz++)
+	    Jy(INDICIES(ix,iy,iz)) = Jtmp(INDICIES(ix,iy,iz))+
+	      Jy(INDICIES(ix,iy,iz));
+    }
+  }
+
+  void pass_guards(ArrayNd_ranged<FTYPE,NDIM> &in, const int nx_guard[]);
+  const int nx_guard[] = {1,1};
+  pass_guards(Jx,nx_guard);
+  pass_guards(Jy,nx_guard);
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Need Ion density for momentum eqn. solved below
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+  extern void density(FArrayND &, int, particle_dist *, fluid *, FTYPE);
+  for (int id=0;id<ndist;id++) {
+    if (method[id]>=0) {
+      /* get density for this method */
+      /* 
+	 it would be nice to replace this routine with a specific 
+	 pic density routine 
+      */
+      //density(dentmp, id, pic, fspecie, 1.0);
+      pic_density(dentmp, id, pic[id], 1.0);
+      /* add to density array */
+      for(int ix=0;ix<nx;ix++)
+	for (int iy=0;iy<ny;iy++)
+	  for (int iz=0;iz<nz;iz++)
+	    {
+	    den(INDICIES(ix,iy,iz)) = dentmp(INDICIES(ix,iy,iz))+
+	      den(INDICIES(ix,iy,iz));
+	    }
+    }
+  }
+
+  /* copy boundaries for differentiation */
+  pass_guards(den,nx_guard);
+
+  void efield_quasineut_solver(field &Efield, FArrayND_ranged den, 
+			       INDICIES(FArrayND_ranged Jx,	\
+					FArrayND_ranged Jy,	\
+					FArrayND_ranged Jz),
+			       fluid *fspecie,
+			       int useLU=1);
+  
+  efield_quasineut_solver(Efield,den,INDICIES(Jx,Jy,Jz),fspecie,useLU);
+  
+}
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   This next subroutine deals with all the PETSc stuff; This is 
+   separated out for reasons of modularity. 
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+
+void efield_quasineut_solver(field &Efield, FArrayND_ranged den, 
+			     INDICIES(FArrayND_ranged Jx,\
+				      FArrayND_ranged Jy,\
+				      FArrayND_ranged Jz),
+			     fluid *fspecie,
+			     int useLU=1)  
+			     
+{
+
+  /* Let's time the amount of time in this routine: */
+  clock_t start_time=times(&times_buf);
+  
+  /* This is done for convenience only */
+  FArrayND_ranged &phi = Efield.phi_rho;  
+
+  /* only the first copy does the work, passes to other copies */
+  if (subdomain.rank==0) {
+      
+    int n_exclude = nx*nsubdomains*ny-1;
+    
+    /* Petsc varibables */
+    static Mat A;
+    static Vec x,b;
+    static KSP ksp; /* linear solver context */
+    PC pc; /* preconditioner context */ 
+    
+
+
+    void getQuasiLHS_alg1(  Mat &A, FArrayND_ranged &den, fluid &fspecie);
+    void getQuasiLHS_alg2(  Mat &A, FArrayND_ranged &den, fluid &fspecie);
+    void  getQuasiRHS(Vec *b, FArrayND_ranged &den, 
+		      FArrayND_ranged &jix, FArrayND_ranged &jiy, 
+		      fluid &fspecie);
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       First time
+       Initialize all static variables
+       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+    
+    static bool first_entry=true;
+    if (first_entry) {
+      VecCreate( subdomain.neighbor_comm, &x );
+      //    }
+      if (useLU) {
+	VecCreate( subdomain.neighbor_comm, &b );
+	if (nsubdomains>1) {
+	  if ((subdomain.id_number+1)==nsubdomains) {
+	    /*              mpi_communication, */
+	    MatCreateMPIAIJ(subdomain.neighbor_comm,
+			    /* local matrix size nrow, ncol */
+			    nx*ny-1,nx*ny-1,
+			    /* global matrix size nrow, ncol */
+			    nx*nsubdomains*ny-1,nx*nsubdomains*ny-1
+			    /* see online documentation for more about next 2 */
+			    /* non-zeros diagonal */
+			    ,9,PETSC_NULL
+			    /* non-zeros off-diagonal */
+			    ,9,PETSC_NULL
+			    ,&A);
+	    //cout << "making exclude mat, rank: " << mpi_rank << "\n";
+	  }
+	  else {
+	    /* 
+	       local part of x vector (size ncol) is one smaller in 
+	       last domain because of n_exclude
+	    */
+	    
+	    /*              mpi_communication, */
+	    MatCreateMPIAIJ(subdomain.neighbor_comm,
+			    /* local matrix size nrow, ncol */
+			    nx*ny,nx*ny,
+			    /* global matrix size nrow, ncol */
+			    nx*nsubdomains*ny-1,nx*nsubdomains*ny-1
+			    /* see online documentation for more about next 2 */
+			    /* non-zeros diagonal */
+			    ,9,PETSC_NULL
+			    /* non-zeros off-diagonal */
+			    ,9,PETSC_NULL
+			    ,&A);
+	    //cout << "making non exclude mat, rank: " << mpi_rank << "\n";
+	  }
+	  
+	} else {
+	
+	  MatCreateSeqAIJ(PETSC_COMM_SELF,
+			  /* nrows */
+			  nx*nsubdomains*ny*nz-1
+			  /* ncols */
+			  ,nx*nsubdomains*ny*nz-1
+			  /* nzeros */
+			  ,9,0,&A);
+	}
+	/* remove n_exclude equation */
+	VecSetSizes( x, PETSC_DECIDE, nx*nsubdomains*ny*nz-1); 
+	/* b has all solutions ? */
+	VecSetFromOptions( x );
+	VecDuplicate( x, &b );
+      } else { /* do iterative solver */
+	MatCreate(subdomain.neighbor_comm,&A);
+	MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,
+		    nx*nsubdomains*ny*nz-1,nx*nsubdomains*ny*nz-1);
+	VecSetSizes( x, PETSC_DECIDE, nx*nsubdomains*ny*nz-1); 
+	VecSetFromOptions( x );
+	VecDuplicate( x, &b );
+      } 
+      
+      
+      MatSetFromOptions(A);
+      KSPCreate(subdomain.neighbor_comm,&ksp);
+      KSPSetTolerances(ksp,1.0e-8/((nx*nsubdomains+1)*(ny+1)),
+		       PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);
+      KSPSetFromOptions(ksp);
+      first_entry=false;
+    }
+    
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       Build A = LHS of quasi-neutral, inertialess momentum eqn.
+       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+    
+
+    for (int id=0;id<ndist;id++) {
+      if (method[id]<0) {
+	// assumes one fluid dist
+	getQuasiLHS_alg1(A, den, fspecie[id]);
+	break;
+      }
+    }
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       Build b = RHS of quasi-neutral, inertialess momentum eqn.
+       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+    for (int id=0;id<ndist;id++) {
+      if (method[id]<0) {
+	// assumes one fluid dist
+	getQuasiRHS(&b,den,Jx,Jy,fspecie[id]);
+	break;
+      }
+    }
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       Build x = Phi-phi_exclude guess
+       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+    
+    void FArrayND_rangedToVec2D(FArrayND_ranged &phi, Vec &phiVec, 
+				int nx, int ny, int n_exclude);  
+    FArrayND_ranged phitmp = Efield.phi_rho;
+    FTYPE phi_exclude=0;// = phitmp(n_exclude/ny,n_exclude%ny); 
+    int ix_exclude=nx*nsubdomains-1;
+    int iy_exclude=ny-1;
+    
+    if (n_exclude>=0) {
+      if (nsubdomains>1) {
+	int ilength;
+	ilength = sizeof(phi_exclude);
+	/* if last domain, pass exclude value */
+	if (subdomain.id_number+1 == nsubdomains) 
+	  phi_exclude =  phitmp(ix_exclude-nx*subdomain.id_number,iy_exclude);
+	MPI_Bcast(&phi_exclude,1,MPI_FTYPE,
+		  nsubdomains-1,subdomain.neighbor_comm);
+      }
+      else {
+	phi_exclude = phitmp(ix_exclude,iy_exclude);
+      }
+    }
+    for(int ix=0;ix<nx;ix++)
+      for (int iy=0;iy<ny;iy++)
+	for (int iz=0;iz<nz;iz++)
+	  phitmp(INDICIES(ix,iy,iz)) = phitmp(INDICIES(ix,iy,iz)) - phi_exclude;
+    
+    
+    FArrayND_rangedToVec2D(phitmp,x,nx,ny,n_exclude);
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       Solve Ax=b using KSP Petsc solver
+       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+    /*
+      if(first_entry){
+      first_entry = false;
+      KSPSetOperators(ksp,A,A,DIFFERENT_NONZERO_PATTERN);
+      } else 
+    KSPSetOperators(ksp,A,A,SAME_NONZERO_PATTERN); 
+    */
+    KSPSetOperators(ksp,A,A,DIFFERENT_NONZERO_PATTERN);
+    KSPGetPC(ksp,&pc);
+    if (useLU) {
+      /* direct solver */
+      PCSetType(pc,PCLU);
+      if (nsubdomains>1) PCFactorSetMatSolverPackage(pc,"superlu_dist");
+      KSPSetType(ksp,KSPPREONLY);
+      PCFactorSetShiftNonzero(pc,1);
+    } else {
+      KSPSetType(ksp,KSPTFQMR);
+      PCSetType(pc,PCJACOBI);
+    }
+    PCSetFromOptions(pc);
+    
+    KSPSolve(ksp,b,x);
+    if (!useLU){
+      int its=0;
+      KSPGetIterationNumber(ksp,&its);
+    }
+
+    void FArrayND_rangedFromVec2D(FArrayND_ranged &phi, 
+				  Vec &phiVec, int nx, int ny
+				  , int n_exclude);
+    FArrayND_rangedFromVec2D(phi,x,nx,ny,n_exclude);
+    if(subdomain.id_number+1==nsubdomains) phi(INDICIES(nx-1,ny-1,nz-1)) = 0.0;
+  
+  
+  
+
+    /* renormalize phi? ie -phi_avg */
+    FTYPE phiavg_local = phi.sum()/(nx*nsubdomains*ny*nz);
+    FTYPE phiavg=0;
+    /* deal with multiple processors */
+    if (mpi_np>1) {
+      MPI_Allreduce(&phiavg_local,&phiavg,1,MPI_FTYPE,MPI_SUM,
+		    subdomain.neighbor_comm);
+    } else 
+      phiavg = phiavg_local;
+    
+    for(int ix=0;ix<nx;ix++)
+      for(int iy=0;iy<ny;iy++)
+	for (int iz=0;iz<nz;iz++)
+	  phi(INDICIES(ix,iy,iz))-=phiavg;
+    
+    /* smooth phi? */
+    /* -- not implemented yet */
+    void pass_guards(ArrayNd_ranged<FTYPE,NDIM> &in, const int nx_guard[]);
+    pass_guards(phi,phix_guard_size);
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       Destroy all non-static variables
+       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+    /* ONLY DISTROY AT THE END
+       VecDestroy(x);
+       VecDestroy(b);
+       MatDestroy(A);
+       //PCDestroy(pc);
+       KSPDestroy(ksp);
+    */
+    
+  }
+
+  /* pass solution to other copies */
+  MPI_Bcast(
+	    &phi(INDICIES(int(-1*phix_guard_size[0]),0,0)),
+	    phi.size(), 
+	    MPI_FTYPE,
+	    subdomain.root,
+	    subdomain.internal_comm);
+
+  /* Let's time the amount of time in this routine: */
+  efield_time += times(&times_buf)-start_time;
+
+
+}
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Build A = LHS of quasi-neutral, inertialess momentum eqn.
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+   The following is copied from fejetqn_petsc.F
+   It appears to follow the procedure outlined in the "Simulation Methods"
+   section of JGR, VOL. 101, NO. A8, PAGES 17,273-17,286, AUGUST 1, 1996
+
+   The terms involving steps in both x and y come from the following approx:
+   Phi_{i+1/2,j+1/2} = (phi_{i+1,j+1}+phi_{i,j+1}+phi_{i+1,j}+phi_{i,j})/2 
+   That is this point of the mesh is an average of it's nearest neighbor pts.
+
+   It is not clear how to come up with the i,j term listed below...
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+
+void getQuasiLHS_alg1(  Mat &A, FArrayND_ranged &den, fluid &fspecie)
+{
+
+  PetscInt index[9]; /* upto nine matrix values at once, for 9-pt stencil */
+  PetscInt r, rowStart, rowEnd;
+  int ix,iy,ixp1,ixp2,ixm1,ixm2,iyp1,iyp2,iym1,iym2;
+  int idx;
+  PetscScalar values[9]; /* for 9-pt stencil */
+
+
+  int n_exclude = nx*nsubdomains*ny-1;
+  FTYPE dx_sqr=dx*dx;
+  FTYPE dy_sqr=dy*dy;
+  FTYPE dx_sqr2=dx_sqr*2;
+  FTYPE dy_sqr2=dy_sqr*2;
+  FTYPE w_e_cyc = Bz*fspecie.q/fspecie.m;
+  FTYPE kappa = w_e_cyc/fspecie.nu;
+  FTYPE c1=kappa/(8*dx*dy);
+  FTYPE value_diag=0;
+  
+
+
+  int xshift = nx*subdomain.id_number;
+  //if (subdomain.id_number+1==nsubdomains) xshift--;
+
+  MatGetOwnershipRange( A, &rowStart, &rowEnd );
+
+  /* 
+     TODO:
+     Filter out boundary conditions+singularity point (ie n_exclude)
+     and reset rowStart,rowEnd 
+  */
+
+
+  for (r=rowStart; r<rowEnd; r++) {
+    if (r==n_exclude) continue;
+    iy = r % ny; ix = r / ny-xshift;
+    //cout << " ix " << ix << " iy " << iy << " r " << r << "\n";
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+	 Define the surrounding node indicies 
+	 Boundary conditions in x are accounted for in the 
+	 FArrayND_ranged ghost cells. 
+	 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+
+    ixp1=ix+1;
+    ixp2=ix+2;
+    ixm1=ix-1;
+    ixm2=ix-2;
+
+    if (nsubdomains==1) {
+    if (ixp1 > nx-1) ixp1=0;
+    if (ixp2 > nx-1) ixp2-=ny;
+    if (ixm1 < 0) ixm1=nx-1;
+    if (ixm2 < 0) ixm2+=nx;
+    }
+    iyp1=iy+1;
+    if (iyp1 > ny-1) iyp1=0;
+
+    iyp2=iy+2;
+    if (iyp2 > ny-1) iyp2=iyp2-ny;
+
+    iym1=iy-1;
+    if (iym1 < 0) iym1=ny-1;
+
+    iym2=iy-2;
+    if (iym2 < 0) iym2=iym2+ny;
+
+
+    
+    /*   Diagonal term   */
+    idx=0;
+    index[idx]=r;
+    value_diag =-(2*den(ix,iy)+den(ixp1,iy)+den(ixm1,iy))/dx_sqr2
+      -(2*den(ix,iy)+den(ix,iyp1)+den(ix,iym1))/dy_sqr2; 
+    values[idx]=1.0;
+    idx=idx+1;
+
+    /*   Forward 1 in x  */
+    index[idx]=ixiyToR(ixp1+xshift,iy);
+    values[idx]=(( den(ix,iy)+den(ixp1,iy))/dx_sqr2 +
+		 c1*(den(ix,iyp1)-den(ix,iym1)))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Backward 1 in x */
+    index[idx]=ixiyToR(ixm1+xshift,iy);
+    values[idx]=(( den(ix,iy)+den(ixm1,iy))/dx_sqr2 +
+		 c1*(den(ix,iym1)-den(ix,iyp1)))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Forward 1 in y  */
+    index[idx]=ixiyToR(ix+xshift,iyp1);
+    values[idx]=((den(ix,iy)+den(ix,iyp1))/dy_sqr2 +
+		 c1*(den(ixm1,iy)-den(ixp1,iy)))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Backward 1 in y */
+    index[idx]=ixiyToR(ix+xshift,iym1);
+    values[idx]=((den(ix,iy)+den(ix,iym1))/dy_sqr2 +
+		 c1*(den(ixp1,iy)-den(ixm1,iy)))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal: (ixp1,iyp1) */
+    index[idx]=ixiyToR(ixp1+xshift,iyp1);
+    values[idx]=(( c1*( den(ix,iyp1)-den(ixp1,iy)) ))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal: (ixp1,iym1) */
+    index[idx]=ixiyToR(ixp1+xshift,iym1);
+    values[idx]=(( c1*(den(ixp1,iy)-den(ix,iym1)) ))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal (ixm1,iym1)  */
+    index[idx]=ixiyToR(ixm1+xshift,iym1);
+    values[idx]=(( c1*( den(ix,iym1)-den(ixm1,iy)) ))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal: (ixm1,iyp1) */
+    index[idx]=ixiyToR(ixm1+xshift,iyp1);
+    values[idx]=(( c1*(den(ixm1,iy)-den(ix,iyp1)) ))/value_diag;
+    if (index[idx] != n_exclude) idx=idx+1;
+    
+    MatSetValues(A,1,&r,idx,index,values,INSERT_VALUES);
+  }
+  MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+}
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+   The following is copied from fejetqn_petsc.F
+   It appears to follow the procedure outlined in the "Simulation Methods"
+   section of JGR, VOL. 101, NO. A8, PAGES 17,273-17,286, AUGUST 1, 1996, but
+   the numerical differentiation is slightly different. 
+
+   The terms involving steps in both x and y come from the following approx:
+   Phi_{i+1/2,j+1/2} = (phi_{i+1,j+1}+phi_{i,j})/2 
+   That is the averaging is done along the diagonal.
+
+   It is not clear how to come up with the i,j term listed below...
+
+   THIS ROUTINE HAS NOT BEEN SUCCESSFULLY IMPLEMENTED
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+/* following copied from fejetqn_petsc.F */
+
+void getQuasiLHS_alg2(  Mat &A, FArrayND_ranged &den, fluid &fspecie)
+{
+
+  PetscInt index[9]; /* upto nine matrix values at once, for 9-pt stencil */
+  PetscInt r, rowStart, rowEnd;
+  int ix,iy,ixp1,ixp2,ixm1,ixm2,iyp1,iyp2,iym1,iym2;
+  int idx;
+  PetscScalar values[9]; /* for 9-pt stencil */
+  FTYPE dx2_sqr=dx*dx*4;
+  FTYPE dy2_sqr=dy*dy*4;
+  FTYPE w_e_cyc = Bz*fspecie.q/fspecie.m;
+  FTYPE kappa = w_e_cyc/fspecie.nu;
+  FTYPE c1=kappa/(4*dx*dy);
+  int n_exclude = nx*nsubdomains*ny-1;
+  
+
+
+  int xshift = nx*subdomain.id_number;
+
+  MatGetOwnershipRange( A, &rowStart, &rowEnd );
+
+  /* 
+     TODO:
+     Filter out boundary conditions+singularity point (ie n_exclude)
+     and reset rowStart,rowEnd 
+  */
+
+  for (r=rowStart; r<rowEnd; r++) {
+    if (r==n_exclude) continue;
+    iy = r % ny; ix = r / ny-xshift;
+
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+	 Define the surrounding node indicies 
+	 Boundary conditions in x are accounted for in the 
+	 FArrayND_ranged ghost cells. 
+	 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+
+    ixp1=ix+1;
+    ixp2=ix+2;
+    ixm1=ix-1;
+    ixm2=ix-2;
+
+    if (nsubdomains==1) {
+    if (ixp1 > nx-1) ixp1=0;
+    if (ixp2 > nx-1) ixp2-=ny;
+    if (ixm1 < 0) ixm1=nx-1;
+    if (ixm2 < 0) ixm2+=nx;
+    }
+    iyp1=iy+1;
+    if (iyp1 > ny-1) iyp1=0;
+
+    iyp2=iy+2;
+    if (iyp2 > ny-1) iyp2=iyp2-ny;
+
+    iym1=iy-1;
+    if (iym1 < 0) iym1=ny-1;
+
+    iym2=iy-2;
+    if (iym2 < 0) iym2=iym2+ny;
+
+
+    
+    //cout << " For ix,iy = " << ix << "," << iy << "\n";
+    /*   Diagonal term   */
+    // cout << " diag 1 ";
+    idx=0;
+    index[idx]=r;
+    values[idx]=(-den(ixp1,iy)-den(ixm1,iy))/dx2_sqr
+      +(-den(ix,iyp1)-den(ix,iym1))/dy2_sqr;
+    idx=idx+1;
+
+    /*   Forward 2 in x  */
+    // cout << " For 2 x ";
+    index[idx]=ixiyToR(ixp2+xshift,iy);
+    values[idx]=( den(ixp1,iy)/dx2_sqr );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Backward 2 in x */
+    // cout << " Back 2 x ";
+    index[idx]=ixiyToR(ixm2+xshift,iy);
+    values[idx]=( den(ixm1,iy)/dx2_sqr );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Forward 2 in y  */
+    // cout << " For 2 y ";
+    index[idx]=ixiyToR(ix+xshift,iyp2);
+    values[idx]=( den(ix,iyp1)/dy2_sqr );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Backward 2 in y */
+    // cout << " Back 2 y ";
+    index[idx]=ixiyToR(ix+xshift,iym2);
+    values[idx]=( den(ix,iym1)/dy2_sqr );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal: (ixp1,iyp1) */
+    // cout << " diag +x+y ";
+    index[idx]=ixiyToR(ixp1+xshift,iyp1);
+    values[idx]=( c1*( den(ixp1,iy)-den(ix,iyp1)) );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal: (ixp1,iym1) */
+    // cout << " diag +x-y ";
+    index[idx]=ixiyToR(ixp1+xshift,iym1);
+    values[idx]=( c1*(-den(ixp1,iy)+den(ix,iym1)) );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal (ixm1,iym1)  */
+    // cout << " diag -x-y ";
+    index[idx]=ixiyToR(ixm1+xshift,iym1);
+    values[idx]=( c1*( den(ixm1,iy)-den(ix,iym1)) );
+    if (index[idx] != n_exclude) idx=idx+1;
+
+    /*   Diagonal: (ixm1,iyp1) */
+    // cout << " diag -x+y \n";
+    index[idx]=ixiyToR(ixm1+xshift,iyp1);
+    values[idx]=( c1*(-den(ixm1,iy)+den(ix,iyp1)) );
+    if (index[idx] != n_exclude) idx=idx+1;
+    
+    MatSetValues(A,1,&r,idx,index,values,INSERT_VALUES);
+  }
+  MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+}
+
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     Build b = RHS of quasi-neutral, inertialess momentum eqn.
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+void  getQuasiRHS(Vec *b, FArrayND_ranged &den, FArrayND_ranged &jix, FArrayND_ranged &jiy, fluid &fspecie)
+{
+  int r, rowStart, rowEnd;
+  FTYPE d2denx,d2deny,djix,djiy,ddenx,ddeny;
+  int ix,iy,ixp1,ixm1,iyp1,iym1;
+  FTYPE w_e_cyc = Bz*fspecie.q/fspecie.m;
+  FTYPE kappa = w_e_cyc/fspecie.nu;
+  /*
+  FTYPE Gamma=((fspecie.nu)*(fspecie.nu)+w_e_cyc*w_e_cyc)/
+    fspecie.nu*fspecie.m/((fspecie.q)*(fspecie.q));
+  */
+  FTYPE Gamma=(1+kappa*kappa)*fspecie.m*fspecie.nu/(fspecie.q*fspecie.q);
+  FTYPE teQe_1=fspecie.gamma*fspecie.T0/fspecie.q;
+  FTYPE dx_sqr=dx*dx;
+  FTYPE dx_sqr2=dx*dx*2;
+  FTYPE dx2 = dx*2;
+  FTYPE dy_sqr=dy*dy;
+  FTYPE dy_sqr2=dy*dy*2;
+  FTYPE dy2 = dy*2;
+  FTYPE value,value_diag;
+  FTYPE sum_value = 0;
+  int n_exclude=nx*nsubdomains*ny-1;
+
+  VecGetOwnershipRange( *b, &rowStart, &rowEnd );
+  //cout << "RHS row start end: " << rowStart << ", " << rowEnd << "\n";
+  int xshift = nx*subdomain.id_number;
+  for (r=rowStart;r<rowEnd; r++) {
+    iy = r % ny; ix = r / ny-xshift;
+    
+    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+	 Define the surrounding node indicies 
+	 Boundary conditions in x are accounted for in the 
+	 FArrayND_ranged ghost cells. 
+	 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+    ixp1=ix+1;
+    ixm1=ix-1;
+    if (nsubdomains==1) {
+    if (ixp1 > nx-1) ixp1=0;
+    if (ixm1 < 0) ixm1=nx-1;
+    }
+
+
+    iyp1=iy+1;
+    if (iyp1 > ny-1) iyp1=0;
+
+    iym1=iy-1;
+    if (iym1 < 0) iym1=ny-1;
+
+    d2denx=(den(ixp1,iy)-2*den(ix,iy)+den(ixm1,iy))/dx_sqr;
+    d2deny=(den(ix,iyp1)-2*den(ix,iy)+den(ix,iym1))/dy_sqr;
+    djix=(jix(ixp1,iy)-jix(ixm1,iy))/dx2;
+    djiy=(jiy(ix,iyp1)-jiy(ix,iym1))/dy2;
+    ddenx=(den(ixp1,iy)-den(ixm1,iy))/dx2;
+    ddeny=(den(ix,iyp1)-den(ix,iym1))/dy2;
+    value_diag =-(2*den(ix,iy)+den(ixp1,iy)+den(ixm1,iy))/dx_sqr2
+      -(2*den(ix,iy)+den(ix,iyp1)+den(ix,iym1))/dy_sqr2; 
+    value = teQe_1*(d2denx+d2deny)
+      +Gamma*(djix+djiy)
+      /* E0x = 0 by definition (in code) */
+      /* +(E0x-kappa*E0y)*ddenx */
+      -kappa*Ey0_external*ddenx
+      /* +(E0y+kappa*E0x)*ddeny), */
+      +Ey0_external*ddeny;
+    /*
+    printf("%d,%d -- x=%12.6g; y=%12.6g value=%12.6g mod=%12.6g\n",ix,iy,d2denx,d2deny,value,
+      +Gamma*(djix+djiy)
+      -kappa*Ey0_external*ddenx
+      +Ey0_external*ddeny
+);
+
+  */
+    value/=value_diag;
+    if (r==n_exclude) {
+      // cout << "RHS value = " << value << "\n";
+      continue;
+    }
+	
+
+    sum_value+=value;
+    VecSetValue( *b, r, value, INSERT_VALUES );
+        
+  }
+
+  VecAssemblyBegin(*b);
+  VecAssemblyEnd(*b);
+
+}
+
+#endif

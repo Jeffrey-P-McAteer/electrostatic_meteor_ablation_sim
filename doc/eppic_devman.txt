@@ -1,0 +1,290 @@
+#+COMMENT: -*- mode: org; -*-
+#+TITLE: EPPIC Developer's Manual
+#+AUTHOR: Meers Oppenheim and Yann Tambouret
+#+EMAIL: meerso@bu.edu
+#+OPTIONS: H:4 toc:2 ^:nil
+
+* Introduction
+* Version control and Repository
+** Intro
+   SVN is used to keep a history of changes and to share revisions. It is just
+   one of many [[http://betterexplained.com/articles/a-visual-guide-to-version-control/][version control]] systems out there, and there are many 
+   [[http://msdn.microsoft.com/en-us/library/bb668955.aspx][stratagies]] for using them. You can access it using the command line, and
+   there are online [[http://svnbook.red-bean.com/en/1.5/index.html][manuals]] to guide you in doing so (svn help /command/, works
+   too). Finally, there is an emacs mode, [[http://www.xsteve.at/prg/emacs/psvn.el][psvn.el]], that can make life a lot
+   easier (once this file is [[atbu_psvn][loaded]], you can activate this mode by pressing
+   M-x and typing 'svn-status', followed by the directory you are using to hold
+   your local copy of the eppic files).
+
+   The main concecpt is to have a history of changes saved in a directory called
+   a repository. Using SVN, you interact with this repository, 'downloading' and
+   'uploading' changes and comments. You can download an old copy of the files
+   or the latest. Your downloaded copy has an extra directory '.svn' in every
+   directory of the local copy. This just helps SVN know where to find the 
+   repository and what files should be copied over. DONT delete or move these 
+   '.svn' directories, or things will get very confusing. 
+
+** Major Commands
+   - 'svn checkout': get a fresh copy of the repository
+   specifically,  'svn checkout
+   svn+ssh://twister.bu.edu/project/nonadmd/.astrosvn/eppic/trunk eppic_dev'
+   will get a copy form off-site.
+   - 'svn update': while in your local copy, make sure the files are as new
+     as possible
+   - 'svn commit': submit your changes; -m message will record a message, but
+     if you don't use this, the default text editor will open to ask for one. 
+   - 'svn add /file/': this adds the file to the repository; WARNING: it wont
+     actually be added until the following 'commit'.
+   - 'svn add /directory/': add the directory and ALL the files in it.
+   - 'svn mv': move a file in your copy and (after a commit) in the repository.
+   - 'svn mkdir': make a new directory here and in the repository.
+
+** Conflicts
+   Sometimes two people edit the same file,
+   at the same time, 'uploading' one after another. The last person to submit 
+   their changes has a conflict; in other words, their changes are temporarorly 
+   rejected. The file is returned in a format similar to a 'diff' execution. 
+   Sections that differ from one person's work to another's are placed back to
+   back and highlighted with '<<<<<' and '====' lines. The person with the 
+   conflict must decide which block to keep or how to mix the two. Three other
+   files are returned when a conflict happens, all with the same name as the 
+   rejected file but with different suffixes: .mine, .r**, r!!. ** and !! 
+   will be two different numbers. ** will be how the file looked before either 
+   person made changes. !! will be how the other person saved their work 
+   (and changes). .mine will obviously be the way you have changed the file, 
+   without all the '<<<<' and '====' sections. These are there to help in case
+   the formating in the rejected file is confusing. Once all your work is done,
+   'svn resolved' tells your .svn folder you are ready to actually save your 
+   changes. Now commiting should happen cleanly
+
+** Update and Status
+   'svn update' lists all the files in your local copy, each one preceeded by 
+   a character. The characters have the following meanings:
+   - ?: File is unknown to the repository; if it needs to be know, add it, but
+     in many cases these are temporary files (*.o etc)
+   - M: Modified file
+   - C: Conflict
+   - G: Confilct, but a simple diff ment an automatic resolution, ie two people
+     edited the same file in distinctly different sections. 
+
+   'svn status -u' reports the same information, but actually does nothing;
+   this is useful incase you expect a conflict and you want to see where it 
+   might happen.
+   
+
+** A typical day using SVN
+
+   1. Run 'svn update' or 'svn status -u' then 'svn update'
+      
+      If everyone is as current as possible, this will help limit conflicts.
+   3. Make your changes. Hopefully these are small and take a few hours (or up 
+      to a day or two) to complete. 
+   4. Run 'svn update' or 'svn status -u' then 'svn update'
+   5. Resolve any conflicts. 
+   6. Run 'svn commit'
+      
+   We should be getting emails everytime someone makes changes, so there should
+   be few suprises when an update is done.
+
+** Major Changes
+   
+   Sometimes your edits will take more than a day to complete. For this we use
+   what are called branches. A branch is just an efficient duplication of the
+   repository, in the repository. Now it's like having two repositories, whose
+   histories will deviate a bit. Once all the work is done,
+   'svn merge /repo1/ /repo2/ /result_dir/' is used to do the equivilant of a
+   commit from repo1 to repo2, but it saves all the files, conflicts or not,
+   in the /result_dir/. Once all the conflicts are resolved, they are saved in
+   one of the branches, and the other is left alone.
+
+   How is this typically use? There is a repository directory called 'trunk',
+   and it contains the copy of the files (and history) of the main program. 
+   Any major modification get's it's own copy, in it's own folder, for example
+   'inject_dev'. The 'trunk' copy of the code will be updated for bugs and 
+   minor improvements. The 'inject_dev' will involve major changes. While
+   these changes are done, bug fixes from the main 'trunk' are periodicly 
+   integrated by the 'inject_dev' developer by performing 
+   'svn merge /trunk/ /inject_dev/ /myinject_dev_wbugfix/'. After each of these,
+   work continues in the /myinject_dev_wbugfix/ local copy. At the end of all 
+   this, there will be a final merge, which should be minor because of the 
+   periodic merges, and the results are commited back to the 'trunk'. Since it
+   has served it's purpose, the 'inject_dev' branch is ignored from then on.
+
+   Branches are also used as markers. We will make branches called 'version1',
+   'version2',... etc., and because these branches are efficient copies, they
+   don't take up much space. It makes it easy though to grab the latest 'stable'
+   verstion, since you can checkout one branch over another (forexample the 
+   main development trunk). 
+
+** Branch Stategy
+
+#+BEGIN_LaTeX
+   \begin{center}
+   \includegraphics[width=.8\textwidth]{/usr3/graduate/yannpaul/eregion2/eppic_dev/doc/svn_how_to.png}
+   \end{center}
+#+END_LaTeX   
+#+BEGIN_HTML
+   <img src="svn_how_to.png"/>
+#+END_HTML
+   A. The repository has a branch called 'trunk', where the general history is
+      kept.
+
+   B. At some point, we decide to isolate 'version 1', because X amount of 
+      features work and are (mostly) reliable. 
+
+   C. A major change is needed, so we make a seperate branch: 'inject dev'
+
+   D. A bug is found in version 1, fixed and it's change is merged with the 
+      'trunk'
+
+   E. The bug fix is passed along to 'inject dev' from the 'trunk' through a 
+      merge. 
+
+   F. Work on 'inject dev' is done, and it is merged with the 'trunk'.
+
+   G. Now that new features are added, 'version 2' is created. 
+
+   Point (C) can be eliminated if 'version 1' is really expected to be 
+   only used as a marker. Some programs have their most recent 'stable' version
+   updated only for bug fixes, as soon as they are found and fixed, while
+   others don't touch a 'stable' version and bug fixes are made to the trunk.
+   In this second case, the fixes are shared with the users after only another
+   stable version is released. 
+   
+
+* Debugging
+** Logging and Sigtraps
+** pdbx
+** Totalview
+* Performance Analysis
+* Preprocessor Macros
+* Inputs
+* Initialization
+** System paramters
+** PIC
+*** RejectND: initializing an abitrary distribution.
+    RejectND has the following parameters:
+    - dist: particle_dist distribution array
+    - id: current distribution id number
+    - iran: random number generator seed
+    - den_func: a PTYPE function that returns the density in units of n0
+
+      The key to the routine is den_func, which for a flat distribution, equal
+      to a density of n0 every where, always returns 1. For depletions, 
+      den_func returns a number between 0 to 1, and, of course, for 
+      accumilations the return values should be greater than 1. 
+**** Example (1): Hole Function
+#+BEGIN_SRC c++
+inline PTYPE hole(int id,INDICIES(PTYPE x, PTYPE y, PTYPE z))
+{
+  // This function returns a constant density with a deep circular linear depletion
+  // Adjust x for the position with respect to the entire domain decomposed system.
+  // this function is only for 2d
+  PTYPE den;
+  x=x+subdomain.id_number*nx;
+  PTYPE rsqr=Sqr(x-nx*nsubdomains/2)+Sqr(y-ny/2);
+  PTYPE den_min=param3[id];
+  const PTYPE routside_hole_sqr=(Sqr(PTYPE(nx*nsubdomains)/2)+Sqr(PTYPE(ny/2)))/4.;
+  const PTYPE rinside_hole_sqr=(Sqr(PTYPE(nx*nsubdomains/2))+Sqr(PTYPE(ny/2)))/32.;
+  const PTYPE routside_hole=sqrt(routside_hole_sqr);
+  const PTYPE rinside_hole=sqrt(rinside_hole_sqr);
+  if (rsqr>routside_hole_sqr) den=1.0;
+  else if (rsqr<routside_hole_sqr && rsqr>rinside_hole_sqr) {
+    // Linearly interpolate between rinside_hole and routside_hole:
+    PTYPE m=(den_min-1)/(rinside_hole-routside_hole);
+    PTYPE b=1-m*routside_hole;
+    den=sqrt(rsqr)*m+b;
+  }
+  else den=den_min;
+  return den;
+};
+#+END_SRC      
+
+     This function ranges from *den_min* = *param3[id]* to 1.0, so the actual 
+     distribution will range from *n0* * *param3[id]* to *n0*. There are three
+     things to note:
+
+     1. den_func must return a *PTYPE* value.
+     2. den_func must always have the following inputs:
+	int *id*,INDICIES(PTYPE *x*, PTYPE *y*, PTYPE *z*)
+	
+	*id* is needed to access the density specific parameters, and INDICIES
+	is a *C* preprocessor macro that replaces the list of x,y and z with
+	the NDIM specific list (eg if NDIM = 2, the code complies PTYPE *x*, 
+	PTYPE *y*).
+
+     3. There needs to be #if NDIM == 1,2 or 3,#endif blocks to make this
+	functions NDIM independant. The code listed above would fail for 
+	NDIM==1, because the code expects *y* to be passed to the routine. The
+	problem is that for NDIM==1, *y* does not exist in the compiler's 
+	'eyes'.
+
+**** Example (2): Column of Plasma, decay to background
+
+#+BEGIN_SRC c++
+inline PTYPE gaussian_axis(int id,INDICIES(PTYPE x, PTYPE y, PTYPE z))
+{
+// U is a unit vector defining the direction of column
+// A is a vector point from the "origin", ie the middle of the box to x,y,z
+// B is the vector from the nearest center of the column to x,y,z
+// Param3-5 = Ux,Uy,Uz (need to be normalized ahead of time)
+// Param6 = height of column maximum in units of N0
+// Param7 = sqr(1/variance)
+// Param8 = background height, typically 1 or 0 (default)
+  x=x+subdomain.id_number*nx;
+  PTYPE Ux=param3[id],Uy=param4[id],Uz=param5[id];
+  PTYPE den;  
+  PTYPE Ax=x-PTYPE(nx*nsubdomains/2),Ay=0,Az=0;
+,#if NDIM>=2
+  Ay=y-PTYPE(ny/2);
+,#elsif NDIM == 3
+  Az=z-PTYPE(ny/2);
+,#endif
+  PTYPE L=Ax*Ux+Ay*Uy+Az*Uz;
+  PTYPE Bx=Ax-L*Ux,By=Ay-L*Uy,Bz=Az-L*Uz;
+  PTYPE distsqr=Sqr(Bx)+Sqr(By)+Sqr(Bz);
+  den = param6[id]*exp(-distsqr*param7[id])+param8[id];
+  return den;
+};
+#+END_SRC
+
+**** Example (3): Column of Plasma, decay to nothing
+       
+
+As you can see from Example (2), the decay to nothing can be set by making 
+*param8* = 0. This is useful if you are going to use two distributions to 
+represent one type of particle, say in the case where you have a column of 
+hot ions interacting with a background of cold ions. Here you would set one
+distribution to a random background of *n0*, and the other would use the 
+gaussian column that decays to 0. Having this option of setting the background
+level through a parameter is convient, but the programmer should include tests
+that prohibit the density at any one point from being less than zero. For the
+above example, this would be the case if either abs(*param6*) > *param8* and 
+*param6* is negative or *param8* is negative. This testing should be included
+in the routine *check*.
+
+** Fluid
+** Field(s)
+* PIC integration
+* Fluid integration
+* Boundary Conditions
+* Output
+* Result Analysis: IDL
+* Result Analysis: Other
+* TESTING:
+** Testing Routines
+** Testing Output
+   To test the output, you need to write a small shell script that will
+   1. Call eppic and tell it to use your test input.
+   2. Call idl and tell it ouse your test idl program.
+   3. Return the status of the test, so the make file can run the tests 
+      automaticly. 
+*** Fluid Flux example
+    You can find a basic example in tests/output/fluid_flux.sh
+    
+* APPENDIX: Working at BU 
+# <<atbu>> 
+** Where to find psvn.el at BU:
+# <<atbu_psvn>>
+   /usr3/graduate/yannpaul/.emacsfiles/psvn.el
+   You can 

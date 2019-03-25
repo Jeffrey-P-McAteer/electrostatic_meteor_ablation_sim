@@ -1,0 +1,63 @@
+
+
+\chapter{BU Specific Notes}
+
+Most of the BU specific configurations are hard-coded into the
+configure script, which checks the value of the '\$HOST' environment
+variable to determine which machine EPPIC is being compiled on. Some
+options are not easily set in the configure script, so we list here
+some custom configurations (mostly environment variables) that are
+needed to access EPPIC's full capabilities. 
+
+\section{PETSc}\index{PETSc}
+
+PETSc is not usually installed in any traditional location used for
+storing libraries, so an environment variable is set to define it's
+location. The \textbf{PETSC\_DIR} variable needs to be set to the base
+directory where PETSc is located, and the \textbf{PETSC\_ARCH} needs to
+be set to the subdirectory where architecture-dependent PETSc library
+was compiled. The EPPIC \textbf{configure} script includes PETSc code in
+the compilation if the \textbf{PETSC\_DIR} is defined, but it does no
+further testing of the PETSc library.
+
+Set the following environment variables in your login configure scripts
+(eg .cshrc):
+\begin{description}
+\item[KATANA] 
+  PETSC\_DIR /project/eregion/katana/petsc-3.0.0-p5\\
+  PETSC\_ARCH katana\_opt
+\item[LEVI/LEE] PETSC\_DIR /project/eregion/LEVI/petsc-3.0.0-p5\\
+  PETSC\_ARCH bgl\_opt
+\end{description}
+
+\noindent{\Large \textbf{NOTE:}} To run PETSc code with debugging, you
+must change the \textbf{PETSC\_ARCH} directory and drop the
+'\_opt'. For example on Katana, \textbf{PETSC\_ARCH} changes from 'katana\_opt'
+to 'katana'. If an easy way to do this in the \textbf{configure}
+script reveals itself, we'll add it to make this scenario seamless.
+
+Also note that on the SCV systems, the same .cshrc file is used for
+multiple architectures. This means you'll likely need to set the above
+variables using a case statement, like so:
+\begin{lstlisting}[language=CSH]
+switch("x$HOST")
+    case "xkatana":
+#katana
+    setenv PETSC_ARCH katana_opt
+    setenv PETSC_DIR /project/eregion/katana/petsc-3.0.0-p5
+    breaksw
+    case "xlee":
+    case "xlevi":
+#BLUEGENE
+    setenv prefix /project/nonadmd/yann/LEVI
+    setenv PETSC_ARCH bgl_opt
+    setenv PETSC_DIR /project/eregion/LEVI/petsc-3.0.0-p5
+    breaksw
+    default:
+    echo unknown host!
+endsw
+\end{lstlisting}
+
+
+ 
+

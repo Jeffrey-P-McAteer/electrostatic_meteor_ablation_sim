@@ -1,0 +1,87 @@
+
+include make.options
+
+#-----------------------------------------------------------------------------
+# Contains definitions customized for this system
+#-----------------------------------------------------------------------------
+
+# library locations, compiler/program definitions
+CPPFLAGS = -D F_PRECISION=$(F_PRECISION) \
+	-D P_PRECISION=$(P_PRECISION) \
+	-D NDIM=$(NDIM) 
+
+CXX = CC
+CXXCPP = 
+# pgi compilers
+
+#CXXFLAGS_OPT = -O -g
+CXXFLAGS_OPT = -O2 -g
+CXXFLAGS_DEBUG = -O0
+
+#CXXFLAGS_OPT = -O -g -Wno-write-strings
+#CXXFLAGS_DEBUG = -O0 -Wno-write-strings
+
+# gnu compilers
+#CXXFLAGS_OPT = -O3
+#CXXFLAGS_DEBUG = -O0
+FFLAGS = -O4
+FFLAGS_DEBUG = -O0
+# does not need this on Kraken
+# but make needs some actual value
+FFTWLIBDIR = /tmp
+FFTWINCDIR = /tmp
+MPICXX = CC
+EPPIC_FFTW_USE_D_PREFIX = 1
+TIMER = time
+
+# I don't know what this is for?
+CLASSLIB = 
+BIN = $(BINDIR)/$(BINNAME)
+
+FFTWLIBS = 
+ifeq ($(USE_FFTW3),1) 
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = -lfftw3f
+	else		
+		FFTLIBS = -lfftw3
+	endif
+else
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = -lsrfftw libsfftw
+	else		
+		FFTLIBS = -lrfftw -lfftw
+	endif
+endif
+
+ifeq ($(USE_DOMAINS),1)
+	FFTWLIBS = -lrfftw_mpi -lfftw_mpi -lrfftw -lfftw
+	CPPFLAGS += -D USE_DOMAINS=1
+endif
+
+ifeq ($(DEBUG),1) 
+	CXXFLAGS = -g $(CXXFLAGS_DEBUG)
+	CPPFLAGS += -D DEBUG=1 
+		-D CHECK=1
+else
+	CXXFLAGS = $(CXXFLAGS_OPT)
+endif
+
+ifeq ($(PROFILING),1)
+	CXXFLAGS += -pg
+endif
+
+ifeq ($(EPPIC_FFTW_USE_D_PREFIX),1)
+	CPPFLAGS += -D EPPIC_FFTW_USE_D_PREFIX=1
+	FFTWLIBS = -ldrfftw_mpi -ldfftw_mpi -ldrfftw -ldfftw
+endif
+
+ifeq ($(USE_MPI),1)
+	CXX = $(MPICXX)
+	CPPFLAGS += -D USE_MPI=1
+endif
+
+LIBS = -L $(FFTWLIBDIR) $(FFTWLIBS) -lm 
+
+
+
+

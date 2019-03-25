@@ -1,0 +1,116 @@
+% This is just the shell of a developer manual. As things are added,
+% I will uncomment them.
+
+\documentclass[letter,11pt]{report}
+\usepackage{fullpage}
+\usepackage{hyperref}
+
+\hypersetup{
+  pdfauthor={Meers Oppenheim},
+  pdftitle={EPPIC User Manual},
+  pdfborder=0,
+  letterpaper=1
+}
+
+% The following package is useful for documenting source code.
+%\usepackage{color}
+\usepackage{xcolor}
+\definecolor{KwdRed}{rgb}{.7,0,0}
+\definecolor{LightGray}{rgb}{.9,.9,.9}
+\definecolor{DarkGray}{rgb}{.4,.4,.4}
+\usepackage{listings}
+\lstset{
+  basicstyle=\small,
+  keywordstyle=\color{KwdRed}\bfseries,
+  commentstyle=\color{DarkGray},
+  backgroundcolor=\color{LightGray},
+}
+\lstloadlanguages{bash,C++}
+
+\usepackage{index}
+\makeindex
+
+\title{EPPIC\\Developer Manual}
+\include{authors}
+\begin{document}
+\maketitle
+\tableofcontents
+
+% -------------------------------------
+% CHAPTER 1: INTRODUCTION
+% -------------------------------------
+\include{eppic_devman/intro}
+
+% -------------------------------------
+% CHAPTER 2: ARRAYS & DOMAIN DECOMPOSITION
+% -------------------------------------
+%\include{eppic_devman/arrays}
+
+% -------------------------------------
+% CHAPTER 3: PIC DISTRIBUTIONS
+% -------------------------------------
+%\include{eppic_devman/pic}
+
+% -------------------------------------
+% CHAPTER 4: FLUID DISTRIBUTIONS
+% -------------------------------------
+%\include{eppic_devman/fluid}
+
+% -------------------------------------
+% CHAPTER 5: INPUT
+% -------------------------------------
+%\include{eppic_devman/input}
+
+% -------------------------------------
+% CHAPTER 6: OUTPUT
+% -------------------------------------
+%\include{eppic_devman/output}
+
+% -------------------------------------
+% CHAPTER 7: ANALYSIS PROGRAMS
+% -------------------------------------
+%\include{eppic_devman/analysis}
+
+% -------------------------------------
+% CHAPTER 8: TESTING
+% -------------------------------------
+\include{eppic_devman/testing}
+
+% -------------------------------------
+% CHAPTER 9: DEBUGGING
+% -------------------------------------
+\include{eppic_devman/debugging}
+
+
+% -------------------------------------
+% CHAPTER 10: BUILD SYSTEM
+% -------------------------------------
+%\include{eppic_devman/build_sys}
+
+
+% -------------------------------------
+% CHAPTER 11: ROAD MAP
+% -------------------------------------
+\include{eppic_devman/road_map}
+
+% -------------------------------------
+% CHAPTER 12: BU SPECIFIC NOTES
+% -------------------------------------
+\include{eppic_devman/buonly}
+
+
+A test citation\cite{Oppenheim1996}.
+%==========================================================================%
+% Bibliography
+\bibliographystyle{apalike}
+
+
+% each subdirectory can have its own BiBTeX file
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{eppic}
+
+% index
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+\end{document}
+

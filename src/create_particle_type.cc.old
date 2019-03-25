@@ -1,0 +1,65 @@
+/**************************************************************
+ Create user-defined MPI type containing
+ a single particle structure:
+
+ typedef struct { 
+   int np;                 // Number of particles in species 
+   PTYPE m,q,n0;           // mass, charge and number density 
+   PTYPEAVec x, y, z;      // array of x positions (normalized to dx)
+   PTYPEAVec vx, vy, vz;   // array of velocity positions
+                           // (normalized to dt/dx, dt/dy and dt/dy)  
+ } particle;
+
+  10/5/06
+  Doug Sondak
+  sondak@bu.edu
+*************************************************************/
+
+#include "eppic.h"            // ndist
+#include "eppic-types.h"      // PTYPE_MPI
+
+void create_particle_type(particle pic[])
+{
+
+#define N 11  // no. elements in particle structure + 1
+
+  int i, j;
+  MPI_Datatype PTYPEAVec_type, particle_type[ndist];
+  MPI_Datatype type[N] = {MPI_INT,
+			  PTYPE_MPI, PTYPE_MPI, PTYPE_MPI,
+			  PTYPE_MPI, PTYPE_MPI, PTYPE_MPI,
+			  PTYPE_MPI, PTYPE_MPI, PTYPE_MPI};
+  int blocklen[N];
+  MPI_Aint disp[N];
+
+  for(i=0; i<ndist; i++)
+    {
+      for(j=0; j<4; j++)
+	blocklen[j] = 1;
+
+      for(j=4; j<10; j++)
+	blocklen[j] = pic[i].np;
+
+      // fill displacement array
+
+      MPI_Address(&pic[i],    &disp[ 0]);
+      MPI_Address(&pic[i].np, &disp[ 1]);
+      MPI_Address(&pic[i].m,  &disp[ 2]);
+      MPI_Address(&pic[i].q,  &disp[ 3]);
+      MPI_Address(&pic[i].n0, &disp[ 4]);
+      MPI_Address(&pic[i].x,  &disp[ 5]);
+      MPI_Address(&pic[i].y,  &disp[ 6]);
+      MPI_Address(&pic[i].z,  &disp[ 7]);
+      MPI_Address(&pic[i].vx, &disp[ 8]);
+      MPI_Address(&pic[i].vy, &disp[ 9]);
+      MPI_Address(&pic[i].vz, &disp[10]);
+
+      for(j=N-1; j>=0; j--)
+	disp[j] -= disp[0];
+
+      MPI_Type_struct(N, blocklen, disp, type, &particle_type[i]);
+      MPI_Type_commit(&particle_type[i]);
+
+    }
+
+}

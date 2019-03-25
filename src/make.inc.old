@@ -1,0 +1,190 @@
+# Default values
+NDIM = 3
+F_PRECISION = 2
+P_PRECISION = 1
+DEBUG = ON
+USE_MPI = ON
+#USE_DOMAINS = ON
+#USE_FFTW3 = ON
+
+RFLAGS = -DNDIM=$(NDIM) -DF_PRECISION=$(F_PRECISION) -DP_PRECISION=$(P_PRECISION)
+
+CXXSOURCES = $(wildcard *.cc)
+CXXOBJS = $(CXXSOURCES:.cc=.o)
+
+CSOURCES = $(wildcard *.c)
+COBJS = $(CSOURCES:.c=.o)
+FSOURCES = $(wildcard *.f)
+FOBJS = $(FSOURCES:.f=.o)
+
+FFLAGS = -O4
+INCS = $(wildcard *.h) $(wildcard classes/*.h)
+CLASSDIR = classes
+INCDIRS = -I../include -I$(CLASSDIR)
+CLASSLIB = 
+
+CXX = g++
+CXXFLAGS = -O -g3 $(INCDIRS)  -Wconversion -Wno-deprecated $(RFLAGS)
+ifeq ($(DEBUG),ON) 
+	CXXFLAGS = -g $(INCDIRS) -Wconversion -Wno-deprecated $(RFLAGS) -DCHECK 
+#-fsignaling-nans -ftrapping-math -ffinite-math-only
+endif
+
+FFTWLIBDIR=../lib
+ifeq ($(USE_FFTW3), ON) 
+	FFTWLIBDIR=../local/lib
+	RFLAGS = -DNDIM=$(NDIM) -DF_PRECISION=$(F_PRECISION) -DP_PRECISION=$(P_PRECISION) -I /usr/local/include -Duse_fftw3
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = -L $(FFTWLIBDIR) -lfftw3f
+	else		
+		FFTLIBS = -L $(FFTWLIBDIR) -lfftw3
+	endif
+else
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = -L $(FFTWLIBDIR) -lsrfftw libsfftw
+	else		
+		FFTLIBS = -L $(FFTWLIBDIR) -ldrfftw -ldfftw
+	endif
+endif
+
+
+LIBS = $(FFTLIBS) -lm
+OUTDIR = ../data
+BINDIR = ../bin
+BINNAME = eppic.x
+BIN = $(BINDIR)/$(BINNAME)
+RUNDIR = $(OUTDIR)
+RUNFLAGS = 
+TIMER = time
+ARFLAGS = rs
+
+ifeq ($(HOSTTYPE),iris4d)
+#	Multiprocessing Origen 2000 w/ MPI
+	CXX = CC
+	ifneq ($(USE_MPI),ON)
+		ifeq ($(DEBUG),ON)
+#		  Single processor debugging
+		  CFLAGS = -g -DSGI -mips4 -r10000 -TARG:platform=ip27 -DCHECK
+		  LIBS= $(FFTLIBS) -lm
+		else
+#		  Fast single processor
+		  CFLAGS = -Ofast -DSGI -DNOCHECK 
+	 	  CFLAGS = -woff 1174,1552 -O3  -TARG:platform=ip27 -n32 -g3 -DSGI -DNOCHECK
+		  LIBS= $(FFTLIBS) -lm
+		endif
+	else
+		ifeq ($(DEBUG),ON)
+#		  Debug multiprocessor processor (MPI)
+		  CFLAGS = -g -DSGI -DCHECK -DUSE_MPI -DUSE_DOMAINS
+		  LIBS= $(FFTLIBS) -lmpi -lm
+		  TIMER = time mpirun -np 1
+		else
+#		  Fast multiprocessor processor (MPI) (NOTE -Ofast sometimes causes trouble with MPI)
+		  CFLAGS = -woff 1174,1552 -O3  -TARG:platform=ip27 -n32 -g3 -DSGI -DNOCHECK -DUSE_MPI -DUSE_DOMAINS
+		  ifeq ($(DOMAINNAME),aclnet)
+		    CFLAGS = -woff 1174,1552 -Ofast -g3 -DSGI -DNOCHECK -DUSE_MPI -DUSE_DOMAINS
+		  endif
+		  LIBS= $(FFTLIBS) -lmpi -lm
+		  TIMER = time mpirun -np 1
+		endif
+	endif
+
+	INCDIRS = -I../include -I$(CLASSDIR) -I/project/ephsphol/eppic/include
+	ifeq ($(DOMAINNAME),scf-nis)
+	  FFTWLIBDIR=/project/ephsphol/eppic/lib
+	endif
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = $(FFTWLIBDIR)/libsrfftw.a $(FFTWLIBDIR)/libsfftw.a
+	else	
+		FFTLIBS =  $(FFTWLIBDIR)/libdrfftw.a $(FFTWLIBDIR)/libdfftw.a
+	endif
+
+	FFLAGS = -O3
+	CXXFLAGS = $(CFLAGS) $(INCDIRS) $(RFLAGS) 
+endif
+
+ifeq (($HOSTTYPE),AIX)
+	HOSTTYPE = rs6000
+endif
+ifeq ($(HOSTTYPE),rs6000)
+	CXX = xlC
+#	INCDIRS = -I../include -I$(CLASSDIR) -Duse_fftw3 -I/usr/local/IT/fftw-3.0.1/include
+	INCDIRS = -I../include -I$(CLASSDIR) -I/usr/local/fftw/include
+	ARFLAGS = -v -q
+
+	FFTWLIBDIR=/usr/local/fftw/lib/aix5
+	FFTLIBS =  $(FFTWLIBDIR)/librfftw.a $(FFTWLIBDIR)/libfftw.a
+#	FFTLIBS = /usr/local/IT/fftw-3.0.1/lib/libfftw3.a
+
+	ifeq ($(USE_DOMAINS),ON)
+	  FFTLIBS =  -L /usr/local/IT/fftw-2.1.3/lib/aix5 -lrfftw_mpi -lfftw_mpi -lrfftw -lfftw
+	endif
+
+	LIBS= $(FFTLIBS) -lmass -lm
+
+	ifneq ($(USE_MPI),ON)
+		ifeq ($(DEBUG),ON)
+#		  Single processor debugging
+		  CFLAGS = -DCHECK  -g -qflttrap=enable:overflow:zerodivide -qfloat=nans -bmaxdata:0X80000000
+		else
+#		  Fast single processor
+		  CFLAGS = -O4 -bmaxdata:0X80000000
+		endif
+	else
+		CXX = mpCC
+		ifeq ($(DEBUG),ON)
+#		  Debug multiprocessor processor (MPI)
+		  CFLAGS = -DCHECK  -g -DUSE_MPI -DUSE_DOMAINS -bmaxdata:0X80000000
+		else
+#		  Fast multiprocessor processor (MPI) 
+		  CFLAGS = -DNOCHECK -DUSE_MPI -DUSE_DOMAINS -O2 -qipa=partition=large -qalias=ansi -qstrict -bmaxdata:0X80000000
+		endif
+		TIMER = time poe
+		RUNFLAGS = -procs 1 
+	endif
+
+	CXXFLAGS = $(CFLAGS) $(INCDIRS) $(RFLAGS) 
+endif
+
+ifeq ($(HOSTTYPE),alpha)
+	CXX = cxx
+	ifeq ($(DEBUG),ON) 
+	  CXXFLAGS = $(INCDIRS) -g -DCHECK $(RFLAGS)
+	  FFLAGS = -g -C -extend_source -u
+	else
+#	  Optimizing Flags
+	  CXXFLAGS = $(INCDIRS) -arch host -assume noptrs_to_globals -O4 -g3 -p $(RFLAGS)
+	  FFLAGS = -fast -g3 -extend_source -u -p
+	endif
+endif	
+
+ifeq ($(HOSTNAME),levi.bu.edu)
+	CXX = blrts_xlC
+	CC  = blrts_xlc
+#	INCDIRS = -I../include -I$(CLASSDIR) -I/project2/scv/sondak/fftw-3.0.1/include -Duse_fftw3 -I/bgl/BlueLight/ppcfloor/bglsys/include
+	INCDIRS = -I../include -I$(CLASSDIR) -I/bgl/local/fftwgel-2.1.5/include -I/bgl/BlueLight/ppcfloor/bglsys/include
+	ARFLAGS = -v -q
+	FFTWLIBDIR=/bgl/local/fftwgel-2.1.5/lib/
+        FFTLIBS = -L $(FFTWLIBDIR) -lrfftw -lfftw
+	LIBS= $(FFTLIBS) -lm -L/bgl/BlueLight/ppcfloor/bglsys/lib/ -lcxxmpich.rts -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts
+
+	 ifneq ($(USE_MPI),ON)
+		ifeq ($(DEBUG),ON)
+#		  Single processor debugging
+		  CFLAGS = -DCHECK  -g -qflttrap=enable:overflow:zerodivide -qfloat=nans $(RFLAGS)
+		else
+#		  Fast single processor
+		  CFLAGS = -O4 $(RFLAGS)
+		endif
+	else
+		ifeq ($(DEBUG),ON)
+#		  Debug multiprocessor processor (MPI)
+		  CFLAGS = -DCHECK  -g -DUSE_MPI -DUSE_DOMAINS $(RFLAGS)
+		else
+#		  Fast multiprocessor processor (MPI) 
+		  CFLAGS = -DNOCHECK -DUSE_MPI -DUSE_DOMAINS -O4 -qtune=440 -qarch=440 -g -qipa=partition=large -qalias=ansi -qstrict $(RFLAGS)
+ 		endif
+	endif
+	CXXFLAGS = $(CFLAGS) $(INCDIRS)
+
+endif

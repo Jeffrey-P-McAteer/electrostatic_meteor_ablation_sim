@@ -1,0 +1,28 @@
+-*- mode: org; -*-
+
+* Introduction
+* System Inputs
+** System dimensions and domains
+** Fields
+*** E region
+*** F region
+** Collision rates and neutral parameters
+** IO Control and subcycling
+** Miscillanious
+* General distrubution inputs: Ions
+** E region
+** F region
+* General distrubution inputs: Electrons
+** E region
+** F region 
+* PIC Inputs
+** Particle Density
+** Initialization
+* Fluid Inputs
+** Initialization
+* Analysis Routines
+** IDL: reading in arrays
+** IDL: Images and Movies
+** IDL: Fourier analysis
+** IDL: Electric fields, currents, etc. 
+* Utilities

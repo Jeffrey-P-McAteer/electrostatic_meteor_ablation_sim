@@ -1,0 +1,30 @@
+
+
+Basic Instructions
+------------------
+
+1) run `cd src`
+2) setup make.options, which mostly controls what code gets compiled
+3) setup make.inc, which mostly controls how the code gets compiled. Choose to:
+3a) copy an existing make.inc.foobar (for system foobar) to make.inc
+3b) edit make.inc for this system. Remember to save a copy for future use. 
+4) run `make`
+
+By default make both compiles eppic.x and executes it. 
+
+
+Notes For Specific Systems
+--------------------------
+
+Kraken
+------
+
+Note that FFTWLIBDIR and FFTWINCDIR makefile variables are not needed by 
+Kraken. What is needed is for the FFTW modules to be loaded. This is done by 
+executing 
+
+module load fftw/2.1.5.3
+
+Note that the name of the module has changed since we've been using Kraken, 
+so keep in mind that it might change again. The above makefile variables
+are not needed but they do need some value, or otherwise make will complain.

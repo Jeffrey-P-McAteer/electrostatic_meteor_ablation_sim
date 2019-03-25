@@ -1,0 +1,76 @@
+
+include make.options
+
+#-----------------------------------------------------------------------------
+# Contains definitions customized for this system
+#-----------------------------------------------------------------------------
+
+# library locations, compiler/program definitions
+CPPFLAGS = -D F_PRECISION=$(F_PRECISION) \
+	-D P_PRECISION=$(P_PRECISION) \
+	-D NDIM=$(NDIM) 
+
+CXX = blrts_xlC
+CXXCPP = 
+CXXFLAGS_OPT = -I /bgl/BlueLight/ppcfloor/bglsys/include \
+	-O3 -qhot -qstrict -qnoipa -qtune=440 -qarch=440 -qalias=ansi
+CXXFLAGS_DEBUG = -O0 -I /bgl/BlueLight/ppcfloor/bglsys/include \
+	-L /bgl/local/totalview-8.1/toolworks/totalview.8.1.0-0/linux-power/lib -ltvheap_bluegene
+FFLAGS = -O4
+FFLAGS_DEBUG = -O0
+FFTWLIBDIR = /bgl/local/fftw-2.1.5-gcc/lib
+FFTWINCDIR = /bgl/local/fftw-2.1.5-gcc/include
+MPICXX = blrts_xlC
+TIMER = time
+
+# I don't know what this is for?
+CLASSLIB = 
+BIN = $(BINDIR)/$(BINNAME)
+
+FFTWLIBS = 
+ifeq ($(USE_FFTW3),1) 
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = -lfftw3f
+	else		
+		FFTLIBS = -lfftw3
+	endif
+else
+	ifeq ($(F_PRECISION),1)
+		FFTLIBS = -lsrfftw libsfftw
+	else		
+		FFTLIBS = -lrfftw -lfftw
+	endif
+endif
+
+ifeq ($(USE_DOMAINS),1)
+	FFTWLIBS = -lrfftw_mpi -lfftw_mpi -lrfftw -lfftw
+	CPPFLAGS += -D USE_DOMAINS=1
+endif
+
+ifeq ($(DEBUG),1) 
+	CXXFLAGS = -g $(CXXFLAGS_DEBUG)
+	CPPFLAGS += -D DEBUG=1 
+		-D CHECK=1
+else
+	CXXFLAGS = $(CXXFLAGS_OPT)
+endif
+
+ifeq ($(PROFILING),1)
+	CXXFLAGS += -pg
+endif
+
+ifeq ($(EPPIC_FFTW_USE_D_PREFIX),1)
+	CPPFLAGS += -D EPPIC_FFTW_USE_D_PREFIX=1
+endif
+
+ifeq ($(USE_MPI),1)
+	CXX = $(MPICXX)
+	CPPFLAGS += -D USE_MPI=1
+endif
+
+
+
+LIBS = -L /bgl/BlueLight/ppcfloor/bglsys/lib \
+	-L $(FFTWLIBDIR) $(FFTWLIBS) \
+	-lm -lcxxmpich.rts -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts
+
