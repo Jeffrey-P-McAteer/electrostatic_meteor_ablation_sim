@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
   if ( mpi_err != MPI_SUCCESS) 
     mpi_error(mpi_rank, mpi_err,"size call in main");
   if (mpi_rank == 0) {
-    mpi_err=MPI_Errhandler_get(MPI_COMM_WORLD,&mpi_err_hand);
+    mpi_err=MPI_Comm_get_errhandler(MPI_COMM_WORLD,&mpi_err_hand);
     printf("\nMPI STARTING %d PROCESSORS\n MPI Error Handler: %d\n\n", 
 	   mpi_np, mpi_err_hand);
   }
