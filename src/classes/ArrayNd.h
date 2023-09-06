@@ -36,7 +36,7 @@ class ArrayNd {
 
   //  Constructor:
   ArrayNd() {
-    data=0;
+    data=new TYPE[A_NDIM * 4]; // if nothing else touches this, data will point to a valid location of some sort w/ buffer space
     ext_workspace = false;
     for (int i=0; i < A_NDIM; i++) {
       nsize[i]=0;

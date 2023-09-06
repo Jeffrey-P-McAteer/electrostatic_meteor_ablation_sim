@@ -41,7 +41,7 @@ void xpush_domain(PTYPEAVec &adv, PTYPEAVec &rhs, int np, PTYPE fnx, FTYPE alpha
 	if ( inject_bound && (x > -1 && x< (PTYPE) 0.) ) {/*do nothing*/}
 	else {
 	  if (nabsent >= absent.size()){
-            printf("nabsent: %d, absent.size(): %d", nabsent, absent.size());
+            printf("%s:%d: nabsent: %d, absent.size(): %d", __FILE__, __LINE__, nabsent, absent.size());
 	    terminate (-1,"Error: Array absent in xpush_domain too small: increase part_pad");
 	  }
 	  absent(nabsent++) = i;
@@ -90,7 +90,7 @@ void xpush_domain(PTYPEAVec &adv, PTYPEAVec &rhs, int np, PTYPE fnx, FTYPE alpha
 	if ( inject_bound && (x > -1 && x< (PTYPE) 0.) ) {/*do nothing*/}
 	else {	
 	  if (nabsent >= absent.size()){
-            printf("nabsent: %d, absent.size(): %d", nabsent, absent.size());
+            printf("%s:%d: nabsent: %d, absent.size(): %d", __FILE__, __LINE__, nabsent, absent.size());
 	    terminate (-1,"Error: Array absent in xpush_domain too small: increase part_pad");
 	  }
 	  absent(nabsent++) = i;

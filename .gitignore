@@ -3,3 +3,6 @@ include
 lib
 *.x
 data/
+domain000/
+params.pro
+

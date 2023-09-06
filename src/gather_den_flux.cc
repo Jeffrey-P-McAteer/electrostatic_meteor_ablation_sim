@@ -95,7 +95,7 @@ void gather_den_flux(FArrayND &den,
   xflux = 0.0;
   yflux = 0.0;
   ny = den.size(1);
-  //np = x.size();
+  np = x.size();
 
   //  For each particle ... 
   for (i = 0; i < np; ++i) {
